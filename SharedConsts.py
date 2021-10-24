@@ -9,8 +9,7 @@ KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id
 # Kraken Job variables
 KRAKEN_JOB_QUEUE_NAME = 'itaym'
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
-PATH_TO_KRAKEN_JOB_ERROR_FILES = Path("/groups/pupko/alburquerque/Kraken/Out/")
-PATH_TO_KRAKEN_JOB_OUTPUT_FILES = Path("/groups/pupko/alburquerque/Kraken/Out/")
+
 
 KRAKEN_JOB_TEMPLATE = '''
 #!/bin/bash

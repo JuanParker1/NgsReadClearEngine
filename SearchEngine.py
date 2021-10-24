@@ -19,9 +19,9 @@ class SearchEngine:
         :return: created job id, path to results
         """
         # create the job
-        job_unique_id = ''  # todo:think of a good way to mark jobs - if it doesnt matter just unique id
+        job_unique_id = str(pathlib.Path(input_path).parent.stem)
         temp_script_path = pathlib.Path().resolve() / f'temp_kraken_search_running_file_{job_unique_id}.sh'
-        results_file_path = str(SC.KRAKEN_RESULTS_FILE_PATH).format(job_unique_id=job_unique_id)
+        results_file_path = pathlib.Path(input_path).parent / 'results.txt'
         temp_script_text = SearchEngine._create_kraken_search_job_text(input_path, run_parameters,
                                                                       job_unique_id, results_file_path)
 
@@ -48,10 +48,11 @@ class SearchEngine:
         job_name = f'KR_{job_unique_id}'
         kraken_run_command = SC.BASE_PATH_TO_KRAKEN_SCRIPT/SC.KRAKEN_SEARCH_SCRIPT_COMMAND
         db_path = SC.BASE_PATH_TO_KRAKEN_SCRIPT/SC.KRAKEN_DB_NAME
+        job_logs_path = str(pathlib.Path(query_path).parent)
         return SC.KRAKEN_JOB_TEMPLATE.format(queue_name=SC.KRAKEN_JOB_QUEUE_NAME,
                                              cpu_number=SC.NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, job_name=job_name,
-                                             error_files_path=SC.PATH_TO_KRAKEN_JOB_ERROR_FILES,
-                                             output_files_path=SC.PATH_TO_KRAKEN_JOB_OUTPUT_FILES,
+                                             error_files_path=job_logs_path,
+                                             output_files_path=job_logs_path,
                                              kraken_base_folder=SC.BASE_PATH_TO_KRAKEN_SCRIPT,
                                              kraken_command=kraken_run_command, db_path=db_path, query_path=query_path,
                                              kraken_results_path=result_path,
