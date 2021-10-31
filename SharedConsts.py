@@ -3,7 +3,7 @@ from pathlib import Path
 # Kraken Variables
 BASE_PATH_TO_KRAKEN_SCRIPT = Path("/groups/pupko/alburquerque/Kraken/")
 KRAKEN_SEARCH_SCRIPT_COMMAND = "kraken2"
-KRAKEN_DB_NAME = "BasicDB"  # assuming the DB is in the same BASE folder as the kraken script
+KRAKEN_DB_NAME = "Bacteria"  # assuming the DB is in the same BASE folder as the kraken script
 KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id}_results.txt"
 
 # Kraken Job variables
