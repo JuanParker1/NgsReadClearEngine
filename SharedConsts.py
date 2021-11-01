@@ -1,5 +1,10 @@
 from pathlib import Path
 
+# PBS Listener consts
+QstatDataColumns = ['job_number', 'username', 'queue', 'job_name', 'session_id', 'nodes', 'cpus', 'req_mem',
+                    'req_time', 'job_status', 'elapsed_time']
+SRVER_USERNAME = 'alburquerque'
+
 # Kraken Variables
 BASE_PATH_TO_KRAKEN_SCRIPT = Path("/groups/pupko/alburquerque/Kraken/")
 KRAKEN_SEARCH_SCRIPT_COMMAND = "kraken2"
@@ -9,7 +14,7 @@ KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id
 # Kraken Job variables
 KRAKEN_JOB_QUEUE_NAME = 'itaym'
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
-
+KRAKEN_JOB_PREFIX = 'KR'
 
 KRAKEN_JOB_TEMPLATE = '''
 #!/bin/bash
