@@ -12,11 +12,11 @@ SRVER_USERNAME = 'alburquerque'
 JOB_RUNNING_TIME_LIMIT_IN_HOURS = 10
 
 # Job listener and management function naming
-LONG_RUNNING_JOBS_NAME = ''  # todo: edo put here what you want
-QUEUE_JOBS_NAME = ''  # todo: edo put here what you want
-NEW_RUNNING_JOBS_NAME = ''  # todo: edo put here what you want
-FINISHED_JOBS_NAME = ''  # todo: edo put here what you want
-FINISHED_JOBS_ERROR = ''  # todo: edo put here what you want
+LONG_RUNNING_JOBS_NAME = 'LongRunning'  # todo: edo put here what you want
+QUEUE_JOBS_NAME = 'Queue'  # todo: edo put here what you want
+NEW_RUNNING_JOBS_NAME = 'NewRunning'  # todo: edo put here what you want
+FINISHED_JOBS_NAME = 'Finished'  # todo: edo put here what you want
+ERROR_JOBS_NAME = 'Error'  # todo: edo put here what you want
 WEIRD_BEHAVIOR_JOB_TO_CHECK = '' # todo: edo put here what you want
 
 # Kraken Variables

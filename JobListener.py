@@ -3,7 +3,7 @@ import re
 import pandas as pd
 from SharedConsts import QstatDataColumns, SRVER_USERNAME, KRAKEN_JOB_PREFIX, JOB_CHANGE_COLS, JOB_ELAPSED_TIME, \
     JOB_RUNNING_TIME_LIMIT_IN_HOURS, JOB_NUMBER_COL, LONG_RUNNING_JOBS_NAME, QUEUE_JOBS_NAME, NEW_RUNNING_JOBS_NAME, \
-    FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, FINISHED_JOBS_ERROR
+    FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, ERROR_JOBS_NAME
 import asyncio
 
 
@@ -31,12 +31,18 @@ class PbsListener:
         :param new_job_state: newly sampled job state
         """
         # todo: talk with everyone of the case of jobs stuck in Q
+        # make sure we have running jobs
+        if len(new_job_state.index) == 0:
+            return
         # check for long running jobs:
         await self.handle_long_running_jobs(new_job_state)
 
         # find jobs who have changed status and act accordingly
         changed_jobs = await self.get_changed_job_state(new_job_state)
-        for job_row, index in changed_jobs.iterrows():
+        # make sure there is something to report
+        if len(changed_jobs.index) == 0:
+            return
+        for index, job_row in changed_jobs.iterrows():
             job_number = job_row[JOB_NUMBER_COL]
             job_status = job_row[JOB_STATUS_COL]
             # case of running jobs
@@ -52,7 +58,7 @@ class PbsListener:
             elif job_status == 'Q':
                 self.functions[QUEUE_JOBS_NAME](job_number)
             elif job_status == 'E':
-                self.functions[FINISHED_JOBS_ERROR](job_number)
+                self.functions[ERROR_JOBS_NAME](job_number)
             else:
                 self.functions[WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
 
@@ -63,7 +69,8 @@ class PbsListener:
         """
         result = subprocess.run(['qstat', f'-u {SRVER_USERNAME}'], stdout=subprocess.PIPE)
         result_lines = (str(result.stdout).split('\\n'))[5:-1]  # irrelevant text from qstat
-        results_params = [re.sub('\s+', ' ', x).split(' ') for x in result_lines]  # remove spaces and turn to data
+        tmp_results_params = [re.sub('\s+', ' ', x).split(' ') for x in result_lines]  # remove spaces and turn to data
+        results_params = [i[:11] for i in tmp_results_params]
         results_df = pd.DataFrame(results_params, columns=QstatDataColumns)
         results_df['cpus'] = results_df['cpus'].astype(int)
         results_df = results_df[results_df['job_name'].str.startswith(KRAKEN_JOB_PREFIX)]
@@ -80,7 +87,9 @@ class PbsListener:
         (including new jobs)
         """
         if self.previous_state is None:
-            return current_job_state[JOB_CHANGE_COLS]
+            temp_df = current_job_state[JOB_CHANGE_COLS]
+            temp_df['origin'] = 'N'
+            return temp_df
         temp_df = self.previous_state
         temp_df['origin'] = 'P'
         current_job_state['origin'] = 'N'
@@ -94,8 +103,8 @@ class PbsListener:
         """
         # todo: discuss if we want to kill these jobs from here or not.
         temp_new_job_state = current_job_state
-        temp_new_job_state = temp_new_job_state[JOB_ELAPSED_TIME].astype(str)
-        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].str.split(':')  # just care about the hours
+        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].astype(str).replace('--','')
+        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].str.replace('','0').str.split(':')  # just care about the hours
         temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].apply(lambda x: int(x[0]))
         long_running_jobs = temp_new_job_state[temp_new_job_state[JOB_ELAPSED_TIME] >= JOB_RUNNING_TIME_LIMIT_IN_HOURS][
             JOB_NUMBER_COL].values
