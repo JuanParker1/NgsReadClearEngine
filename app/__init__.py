@@ -19,9 +19,11 @@ manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FIL
 #def hello():
 #    return "Hello world!"
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
@@ -33,13 +35,16 @@ def process_state(process_id):
 
     return render_template('file_download.html', process_id=process_id, message=message)
 
+
 @app.route('/admin/running')
 def running_processes():
     return render_template('runnning_processes.html', processes_ids=manager.get_running_process())
 
+
 @app.route('/admin/waiting')
 def waiting_processes():
     return render_template('waiting_processes.html', processes_ids=manager.get_waiting_process())
+
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():

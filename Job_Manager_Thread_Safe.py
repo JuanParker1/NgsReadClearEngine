@@ -36,6 +36,7 @@ class Job_Manager_Thread_Safe:
         self.__waiting_queue = Queue()
         self.__search_engine = SearchEngine()
         self.__input_file_name = input_file_name
+        self.listener = []
         
     def add_process(self, process_id: str):
         self.__mutex_processes_state_dict.acquire()
@@ -82,11 +83,11 @@ class Job_Manager_Thread_Safe:
             
         self.__mutex_processes_state_dict.release()
         
-    def pop_from_waiting_queue():
+    def pop_from_waiting_queue(self):
         self.__mutex_processes_waiting_queue.acquire()
         process2return = None
-        if len(self.__waiting_queue) > 0:
-            process2return = self.__waiting_queue.pop(0)
+        if self.__waiting_queue.qsize() > 0:
+            process2return = self.__waiting_queue.get()
         self.__mutex_processes_waiting_queue.release()
         return process2return
 

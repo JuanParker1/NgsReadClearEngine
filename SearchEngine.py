@@ -2,8 +2,8 @@ import os
 import pathlib
 import subprocess
 from subprocess import PIPE
-import SharedConsts as SC
-
+from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAND, KRAKEN_DB_NAME, KRAKEN_JOB_TEMPLATE,\
+    KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX
 
 class SearchEngine:
     """
@@ -45,18 +45,18 @@ class SearchEngine:
         :return: the text for the .sh file
         """
         run_parameters_string = SearchEngine._create_parameter_string(run_parameters)
-        job_name = f'KR_{job_unique_id}'
-        kraken_run_command = SC.BASE_PATH_TO_KRAKEN_SCRIPT/SC.KRAKEN_SEARCH_SCRIPT_COMMAND
-        db_path = SC.BASE_PATH_TO_KRAKEN_SCRIPT/SC.KRAKEN_DB_NAME
+        job_name = f'{KRAKEN_JOB_PREFIX}_{job_unique_id}'
+        kraken_run_command = BASE_PATH_TO_KRAKEN_SCRIPT/KRAKEN_SEARCH_SCRIPT_COMMAND
+        db_path = BASE_PATH_TO_KRAKEN_SCRIPT/KRAKEN_DB_NAME
         job_logs_path = str(pathlib.Path(query_path).parent)
-        return SC.KRAKEN_JOB_TEMPLATE.format(queue_name=SC.KRAKEN_JOB_QUEUE_NAME,
-                                             cpu_number=SC.NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, job_name=job_name,
-                                             error_files_path=job_logs_path,
-                                             output_files_path=job_logs_path,
-                                             kraken_base_folder=SC.BASE_PATH_TO_KRAKEN_SCRIPT,
-                                             kraken_command=kraken_run_command, db_path=db_path, query_path=query_path,
-                                             kraken_results_path=result_path,
-                                             additional_parameters=run_parameters_string)
+        return KRAKEN_JOB_TEMPLATE.format(queue_name=KRAKEN_JOB_QUEUE_NAME,
+                                          cpu_number=NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, job_name=job_name,
+                                          error_files_path=job_logs_path,
+                                          output_files_path=job_logs_path,
+                                          kraken_base_folder=BASE_PATH_TO_KRAKEN_SCRIPT,
+                                          kraken_command=kraken_run_command, db_path=db_path, query_path=query_path,
+                                          kraken_results_path=result_path,
+                                          additional_parameters=run_parameters_string)
 
     @staticmethod
     def _create_parameter_string(run_parameters):
