@@ -2,7 +2,7 @@ import subprocess
 import time
 import os
 from contextlib import suppress
-
+from apscheduler.schedulers.background import BackgroundScheduler
 import SharedConsts as sc
 import JobListener
 import asyncio
@@ -37,36 +37,24 @@ PYTHONPATH=$(pwd)
 python "/groups/pupko/alburquerque/NgsReadClearEngine/to_run.py"
 
 '''
-async def main():
-    function_to_call = {sc.LONG_RUNNING_JOBS_NAME: print("long running"), sc.NEW_RUNNING_JOBS_NAME: p_running,
-                        sc.QUEUE_JOBS_NAME:p_Q, sc.FINISHED_JOBS_NAME:p_f}
-    listener = JobListener.PbsListener(function_to_call)
-    asyncio.ensure_future(listener.run(10))
-    for i in range(4):
-        file_path = '/groups/pupko/alburquerque/NgsReadClearEngine/temp_sh.sh'
-        with open(file_path, 'w+') as fp:
-            fp.write(T)
-        terminal_cmd = f'/opt/pbs/bin/qsub {str(file_path)}'
-        subprocess.call(terminal_cmd, shell=True)
-        os.remove(file_path)
 
-    for i in range(20):
-        file_path = '/groups/pupko/alburquerque/NgsReadClearEngine/temp_sh.sh'
-        with open(file_path, 'w+') as fp:
-            fp.write(T)
-        terminal_cmd = f'/opt/pbs/bin/qsub {str(file_path)}'
-        subprocess.call(terminal_cmd, shell=True)
-        os.remove(file_path)
+
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-    # Let's also cancel all running tasks:
-    # pending = asyncio.Task.all_tasks()
-    # for task in pending:
-    #     task.cancel()
-    #     # Now we should await task to execute it's cancellation.
-    #     # Cancelled task raises asyncio.CancelledError that we can suppress:
-    #     with suppress(asyncio.CancelledError):
-    #         loop.run_until_complete(task)
+    function_to_call = {sc.LONG_RUNNING_JOBS_NAME: print("long running"), sc.NEW_RUNNING_JOBS_NAME: p_running,
+                        sc.QUEUE_JOBS_NAME:p_Q, sc.FINISHED_JOBS_NAME:p_f}
+    listener = JobListener.PbsListener(function_to_call)
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(listener.run, 'interval', seconds=30)
+    scheduler.start()
+
+    while True:
+        for i in range(4):
+            file_path = '/groups/pupko/alburquerque/NgsReadClearEngine/temp_sh.sh'
+            with open(file_path, 'w+') as fp:
+                fp.write(T)
+            terminal_cmd = f'/opt/pbs/bin/qsub {str(file_path)}'
+            subprocess.call(terminal_cmd, shell=True)
+            os.remove(file_path)
+        time.sleep(20)
