@@ -19,11 +19,9 @@ manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FIL
 #def hello():
 #    return "Hello world!"
 
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
@@ -32,19 +30,18 @@ def process_state(process_id):
         message = 'File uploaded successfully!'
     else:
         message = 'Verify file is of type fasta or fastqc'
-
-    return render_template('file_download.html', process_id=process_id, message=message)
-
+    print('__init__', 'process_state()', f'process_id = {process_id} message = {message}')
+    job_state = manager.get_job_state(process_id)
+    print('__init__', 'process_state()', f'process_id = {process_id} message = {message} job_state = {job_state}')
+    return render_template('file_download.html', process_id=process_id, message=message, state=job_state)
 
 @app.route('/admin/running')
 def running_processes():
     return render_template('runnning_processes.html', processes_ids=manager.get_running_process())
 
-
 @app.route('/admin/waiting')
 def waiting_processes():
     return render_template('waiting_processes.html', processes_ids=manager.get_waiting_process())
-
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -67,4 +64,7 @@ def upload_file():
             # TODO change file name
             file.save(os.path.join(folder2save_file, USER_FILE_NAME))
             return redirect(url_for('process_state', process_id=new_process_id))
+        else:
+            # TODO handle not allowed file extention
+            print('__init__', 'upload_file()', 'file extention not allowed')
     return render_template('home.html')
