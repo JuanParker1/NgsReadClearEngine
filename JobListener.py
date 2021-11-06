@@ -13,32 +13,31 @@ class PbsListener:
         self.functions = functions_to_call
         self.previous_state = None
 
-    async def run(self, sleep_in_sec):
-        while True:
-            # get running jobs data
-            current_job_state = await self.get_server_job_stats()
-            # check state diff, act accordingly
-            await self.handle_job_state(current_job_state)
-            # update job status
-            self.previous_state = current_job_state
-            # wait till next heartbeat
-            await asyncio.sleep(sleep_in_sec)
+    def run(self):
+        # get running jobs data
+        current_job_state = self.get_server_job_stats()
+        # check state diff, act accordingly
+        self.handle_job_state(current_job_state)
+        # update job status
+        self.previous_state = current_job_state[JOB_CHANGE_COLS]
 
-    async def handle_job_state(self, new_job_state):
+    def handle_job_state(self, new_job_state):
         """
         this function gets the newly sampled PBS job status and alerts the job manager accordingly through the
         "functions_to_call" dictionary that is provided by the job manager upon creation.
         :param new_job_state: newly sampled job state
         """
         # todo: talk with everyone of the case of jobs stuck in Q
+        # todo: talk with Edo about jobs that run/error in a time between intervals (I think we have to do a wrapper
+        #  layer that "knows" which jobs it runs.
         # make sure we have running jobs
         if len(new_job_state.index) == 0:
             return
         # check for long running jobs:
-        await self.handle_long_running_jobs(new_job_state)
+        self.handle_long_running_jobs(new_job_state)
 
         # find jobs who have changed status and act accordingly
-        changed_jobs = await self.get_changed_job_state(new_job_state)
+        changed_jobs = self.get_changed_job_state(new_job_state)
         # make sure there is something to report
         if len(changed_jobs.index) == 0:
             return
@@ -62,7 +61,7 @@ class PbsListener:
             else:
                 self.functions[WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
 
-    async def get_server_job_stats(self):
+    def get_server_job_stats(self):
         """
         gets the users current job statistics (running and queued) and parses them
         :return: a data frame of all current jobs
@@ -77,7 +76,7 @@ class PbsListener:
 
         return results_df
 
-    async def get_changed_job_state(self, current_job_state):
+    def get_changed_job_state(self, current_job_state):
         """
         takes the new job state and returns a pandas DF with only the relevant job data,
         it does so by removing all jobs that appear with the same status in both of the states (previous, current)
@@ -92,11 +91,12 @@ class PbsListener:
             return temp_df
         temp_df = self.previous_state
         temp_df['origin'] = 'P'
+        current_job_state = current_job_state[JOB_CHANGE_COLS]
         current_job_state['origin'] = 'N'
         temp_df = temp_df.append(current_job_state)
-        return temp_df.drop_duplicates(keep=False)
+        return temp_df.drop_duplicates(JOB_CHANGE_COLS, keep=False)
 
-    async def handle_long_running_jobs(self, current_job_state):
+    def handle_long_running_jobs(self, current_job_state):
         """
         handles jobs that have exceeded the timeout
         :param current_job_state: newly sampled job state
