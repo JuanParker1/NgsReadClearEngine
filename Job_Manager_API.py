@@ -6,10 +6,10 @@ from InputValidator import InputValidator
 
 
 class Job_Manager_API:
-    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str):
+    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, func2update_html):
         self.__input_file_name = input_file_name
         self.__upload_root_path = upload_root_path
-        self.j_manager_thread_safe = Job_Manager_Thread_Safe(max_number_of_process, upload_root_path, input_file_name)
+        self.j_manager_thread_safe = Job_Manager_Thread_Safe(max_number_of_process, upload_root_path, input_file_name, func2update_html)
         self.input_validator = InputValidator()
     
     def __delete_folder(self, process_id):

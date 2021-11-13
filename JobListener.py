@@ -30,8 +30,9 @@ class PbsListener:
         # todo: talk with Edo about jobs that run/error in a time between intervals (I think we have to do a wrapper
         #  layer that "knows" which jobs it runs.
         # make sure we have running jobs
-        if len(new_job_state.index) == 0:
-            return
+        # EDO - remarked as comment, causing problems
+        # if len(new_job_state.index) == 0:
+        #    return
         # check for long running jobs:
         self.handle_long_running_jobs(new_job_state)
 

@@ -46,6 +46,6 @@ source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
-{kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path} --threads 20 {additional_parameters}"
+{kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 {additional_parameters}
 
 '''

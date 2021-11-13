@@ -1,7 +1,6 @@
 from threading import Lock
 import uuid
 from enum import Enum
-from queue import Queue
 import datetime
 import os
 from SearchEngine import SearchEngine
@@ -12,7 +11,7 @@ import SharedConsts as sc
 
 class State(Enum):
     Running = 1
-    Finshed = 2
+    Finished = 2
     Crashed = 3
     Waiting = 4
     Init = 5
@@ -29,15 +28,16 @@ class Job_State:
         self.state = new_state
 
 class Job_Manager_Thread_Safe:
-    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str):
+    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, func2update_html):
         self.max_number_of_process = max_number_of_process
         self.upload_root_path = upload_root_path
         self.__processes_state_dict = {}
         self.__mutex_processes_state_dict = Lock()
         self.__mutex_processes_waiting_queue = Lock()
-        self.__waiting_queue = Queue()
+        self.__waiting_list = []
         self.__search_engine = SearchEngine()
         self.__input_file_name = input_file_name
+        self.__func2update_html = func2update_html
         function_to_call = {
             sc.LONG_RUNNING_JOBS_NAME: self.__p_long_running,
             sc.NEW_RUNNING_JOBS_NAME: self.__p_running,
@@ -50,48 +50,82 @@ class Job_Manager_Thread_Safe:
         self.__scheduler.add_job(self.__listener.run, 'interval', seconds=5)
         self.__scheduler.start()      
         
+    def __calc_num_running_processes(self):
+        running_processes = 0
+        self.__mutex_processes_state_dict.acquire()
+        
+        for process_id in self.__processes_state_dict:
+            if self.__processes_state_dict[process_id].state == State.Running:
+                running_processes += 1
+        
+        self.__mutex_processes_state_dict.release()
+        return running_processes
     
-    def __p_long_running(self, a):
+    def __calc_process_id(self, pbs_id):
+        clean_pbs_id = pbs_id.split('.')[0]
+        process_id2return = None
+        self.__mutex_processes_state_dict.acquire()
+        for process_id in self.__processes_state_dict:
+            if clean_pbs_id == self.__processes_state_dict[process_id].pbs_id:
+                process_id2return = process_id
+                break
+        self.__mutex_processes_state_dict.release()
+        if not process_id2return:
+            #TODO handle
+            print('Job_Manager_Thread_Safe', f'__calc_process_id(pbs_id = {pbs_id})', f'process not found in dict = {self.__processes_state_dict}')
+        return process_id2return
+    
+    def __p_long_running(self, pbs_id):
         print('Job_Manager_Thread_Safe', '__p_long_running()')
         #TODO handle
         pass
         
-    def __p_running(self, process_id):
-        print('Job_Manager_Thread_Safe', f'__p_running(process_id = {process_id})')
+    def __p_running(self, pbs_id):
+        process_id = self.__calc_process_id(pbs_id)
+        print('Job_Manager_Thread_Safe', f'__p_running(pbs_id = {pbs_id}) process_id = {process_id}')
         self.__set_process_state(process_id, State.Running)
         
-    def __p_error(self, process_id):
+    def __p_error(self, pbs_id):
+        process_id = self.__calc_process_id(pbs_id)
         print('Job_Manager_Thread_Safe', f'__p_error(process_id = {process_id})')
         self.__set_process_state(process_id, State.Crashed)
         process2add = self.__pop_from_waiting_queue()
         if process2add:
             self.add_process(process2add)
         
-    def __p_Q(self, a):
+    def __p_Q(self, pbs_id):
         print('Job_Manager_Thread_Safe', f'__p_Q()')
         #TODO handle
         pass
     
-    def __p_finished(self, a):
-        print('Job_Manager_Thread_Safe', f'__p_finished()')
-        self.__set_process_state(process_id, State.Finshed)
+    def __p_finished(self, pbs_id):
+        process_id = self.__calc_process_id(pbs_id)
+        print('Job_Manager_Thread_Safe', f'__p_finished(pbs_id = {pbs_id})')
+        self.__set_process_state(process_id, State.Finished)
         process2add = self.__pop_from_waiting_queue()
+        print('Job_Manager_Thread_Safe', f'__p_finished', f'process2add = {process2add}')
         if process2add:
             self.add_process(process2add)
     
     def __set_process_state(self, process_id, state):
+        print('Job_Manager_Thread_Safe', f'__set_process_state(process_id = {process_id} state = {state})')
         self.__mutex_processes_state_dict.acquire()
         if process_id in self.__processes_state_dict:
             self.__processes_state_dict[process_id].set_state(state)
         else:
             #TODO handle
             print('Job_Manager_Thread_Safe', '__set_process_state()', f'process_id {process_id} not in dict state {state}')
+            print('Job_Manager_Thread_Safe', '__set_process_state()', f'self.__processes_state_dict = {self.__processes_state_dict}')
         self.__mutex_processes_state_dict.release()
+        print('Job_Manager_Thread_Safe', f'__set_process_state calling __func2update_html')
+        self.__func2update_html(process_id)
     
     def add_process(self, process_id: str):
+        # don't put inside the mutex area - the funciton acquire the mutex too
+        running_processes = self.__calc_num_running_processes()
         self.__mutex_processes_state_dict.acquire()
         
-        if len(self.__processes_state_dict) < self.max_number_of_process:
+        if running_processes <= self.max_number_of_process:
             if process_id not in self.__processes_state_dict:
                 process_folder_path = os.path.join(self.upload_root_path, process_id)
                 file2fltr = os.path.join(process_folder_path, self.__input_file_name)
@@ -105,7 +139,7 @@ class Job_Manager_Thread_Safe:
             # TODO handle
             print('Job_Manager_Thread_Safe', 'add_process()', 'too many processes, adding to wait list')
             self.__mutex_processes_waiting_queue.acquire()
-            self.__waiting_queue.put(process_id)
+            self.__waiting_list.append(process_id)
             self.__mutex_processes_waiting_queue.release()
         
         self.__mutex_processes_state_dict.release()
@@ -120,19 +154,21 @@ class Job_Manager_Thread_Safe:
         
     def get_waiting_process(self):
         self.__mutex_processes_waiting_queue.acquire()
-        processes = list(self.__waiting_queue.queue)
+        processes = self.__waiting_list
         self.__mutex_processes_waiting_queue.release()
         return processes
         
     def __pop_from_waiting_queue(self):
         self.__mutex_processes_waiting_queue.acquire()
         process2return = None
-        if self.__waiting_queue.qsize() > 0:
-            process2return = self.__waiting_queue.get()
+        if len(self.__waiting_list) > 0:
+            process2return = self.__waiting_list.pop(0)
         self.__mutex_processes_waiting_queue.release()
         return process2return
     
     def get_job_state(self, process_id: str):
         if process_id in self.__processes_state_dict:
             return self.__processes_state_dict[process_id].state
+        if process_id in self.__waiting_list:
+            return State.Waiting
         return None
