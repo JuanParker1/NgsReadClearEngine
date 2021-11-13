@@ -8,7 +8,7 @@ JOB_ELAPSED_TIME = 'elapsed_time'
 JOB_CHANGE_COLS = [JOB_NUMBER_COL, JOB_NAME_COL, JOB_STATUS_COL]
 QstatDataColumns = [JOB_NUMBER_COL, 'username', 'queue', JOB_NAME_COL, 'session_id', 'nodes', 'cpus', 'req_mem',
                     'req_time', JOB_STATUS_COL, JOB_ELAPSED_TIME]
-SRVER_USERNAME = 'alburquerque'
+SRVER_USERNAME = 'bioseq'
 JOB_RUNNING_TIME_LIMIT_IN_HOURS = 10
 
 # Job listener and management function naming
@@ -46,6 +46,6 @@ source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
-{kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path} {additional_parameters}"
+{kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path} --threads 20 {additional_parameters}"
 
 '''

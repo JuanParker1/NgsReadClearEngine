@@ -2,8 +2,13 @@ from flask import Flask, flash, request, redirect, url_for, render_template
 from werkzeug.utils import secure_filename
 from Job_Manager_API import Job_Manager_API
 import os
+import warnings
 
-UPLOAD_FOLDERS_ROOT_PATH = '/data/www/flask/fltr_backend/data/'
+
+#TODO think about it
+warnings.filterwarnings("ignore")
+
+UPLOAD_FOLDERS_ROOT_PATH = '/bioseq/data/results/genome_fltr/'
 USER_FILE_NAME = 'reads.fasta'
 ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 MAX_NUMBER_PROCESS = 3
@@ -30,9 +35,9 @@ def process_state(process_id):
         message = 'File uploaded successfully!'
     else:
         message = 'Verify file is of type fasta or fastqc'
-    print('__init__', 'process_state()', f'process_id = {process_id} message = {message}')
+    #print('__init__', 'process_state()', f'process_id = {process_id} message = {message}')
     job_state = manager.get_job_state(process_id)
-    print('__init__', 'process_state()', f'process_id = {process_id} message = {message} job_state = {job_state}')
+    #print('__init__', 'process_state()', f'process_id = {process_id} message = {message} job_state = {job_state}')
     return render_template('file_download.html', process_id=process_id, message=message, state=job_state)
 
 @app.route('/admin/running')
@@ -46,6 +51,7 @@ def waiting_processes():
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
+        #print('__init__', 'upload_file()', f'request.files = {request.files}')
         # check if the post request has the file part
         if 'file' not in request.files:
             flash('No file part')
