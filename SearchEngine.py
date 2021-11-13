@@ -48,7 +48,7 @@ class SearchEngine:
         job_name = f'{KRAKEN_JOB_PREFIX}_{job_unique_id}'
         kraken_run_command = BASE_PATH_TO_KRAKEN_SCRIPT/KRAKEN_SEARCH_SCRIPT_COMMAND
         db_path = BASE_PATH_TO_KRAKEN_SCRIPT/KRAKEN_DB_NAME
-        job_logs_path = str(pathlib.Path(query_path).parent)
+        job_logs_path = str(pathlib.Path(query_path).parent) + '/'
         return KRAKEN_JOB_TEMPLATE.format(queue_name=KRAKEN_JOB_QUEUE_NAME,
                                           cpu_number=NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, job_name=job_name,
                                           error_files_path=job_logs_path,
