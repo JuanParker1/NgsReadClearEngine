@@ -1,3 +1,13 @@
 <h3> Welcome, {{process_id}}! </h3>
-<h3> message, {{message}}! </h3>
 <h3> current state, {{state}}! </h3>
+<script>
+	var targetContainer = document.getElementById("target_div");
+	var process_id = '{{process_id}}';
+	var eventSource = new EventSource("/stream")
+		eventSource.onmessage = function(e) {
+		if (process_id === e.data){
+			alert(e.data);
+			window.location.reload();
+		}
+	};
+</script>
