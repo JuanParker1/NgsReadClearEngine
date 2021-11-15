@@ -1,21 +1,13 @@
 from threading import Lock
 import uuid
-from enum import Enum
 import datetime
 import os
 from SearchEngine import SearchEngine
 from apscheduler.schedulers.background import BackgroundScheduler
 import JobListener
 import SharedConsts as sc
+from utils import State
 
-
-class State(Enum):
-    Running = 1
-    Finished = 2
-    Crashed = 3
-    Waiting = 4
-    Init = 5
-    
 
 class Job_State:
     def __init__(self, folder_path: str, pbs_id: str):
@@ -118,7 +110,7 @@ class Job_Manager_Thread_Safe:
             print('Job_Manager_Thread_Safe', '__set_process_state()', f'self.__processes_state_dict = {self.__processes_state_dict}')
         self.__mutex_processes_state_dict.release()
         print('Job_Manager_Thread_Safe', f'__set_process_state calling __func2update_html')
-        self.__func2update_html(process_id)
+        self.__func2update_html(process_id, state)
     
     def add_process(self, process_id: str):
         # don't put inside the mutex area - the funciton acquire the mutex too
@@ -129,8 +121,9 @@ class Job_Manager_Thread_Safe:
             if process_id not in self.__processes_state_dict:
                 process_folder_path = os.path.join(self.upload_root_path, process_id)
                 file2fltr = os.path.join(process_folder_path, self.__input_file_name)
+                print('Job_Manager_Thread_Safe', '--before add_process()--')
                 pbs_id, _ = self.__search_engine.kraken_search(file2fltr, None)
-                print('Job_Manager_Thread_Safe', 'add_process()', 'job submitted', f'pbs id {pbs_id}')
+                print('Job_Manager_Thread_Safe', '--add_process()--', 'job submitted', f'pbs id {pbs_id}')
                 self.__processes_state_dict[process_id] = Job_State(process_folder_path, pbs_id)
             else:
                 # TODO handle exception

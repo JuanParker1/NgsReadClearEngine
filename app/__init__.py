@@ -21,7 +21,7 @@ app.config['UPLOAD_FOLDERS_ROOT_PATH'] = UPLOAD_FOLDERS_ROOT_PATH # path to fold
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 # MAX file size to upload
 process_id2update = []
 
-def update_html(process_id):
+def update_html(process_id, state):
     print('__init__', f'update_html(process_id = {process_id})')
     if process_id:
         process_id2update.append(process_id)
