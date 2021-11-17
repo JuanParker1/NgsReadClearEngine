@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genomefltr</title>
+  <link rel="stylesheet" href="{{url_for('static',filename='css/main.css')}}">
+  <script src="https://cdn.jsdelivr.net/npm/danfojs@0.3.3/lib/bundle.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.6.3.min.js"></script>
+</head>
+
+
+
+<body class="font-sans">
+  <div class='w-full h-screen bg-no-repeat bg-cover' 
+       style="background-image: url('static/images/background.jpg')">
+
+    <div class="flex flex-col mx-auto  h-full justify-evenly items-center">
+        <div id="species_container"></div>
+        <div id="tester" style="width:600px;height:450px;"></div>
+        <div id="tester_pie" style="width:600px;height:450px;"></div>
+        <input id="slider" type="range">
+    </div>
+  </div>
+</body>
+<script>
+    const species_container = document.getElementById("species_container");
+    
+    
+
+    let new_index = []
+    let new_data = {}
+    const json_data = JSON.parse('{{ data|safe }}');
+    Object.entries(json_data).map(([key, val]) => {
+        new_data[key] =  Object.values(val);
+        new_index = Object.keys(val);
+    })
+    new_index = new_index.map((item) => parseFloat(item))
+    df = new dfd.DataFrame(new_data, {index: new_index});
+
+    // df = df.set_index({index: new_index, dtype: "string"})
+    // df = df.astype({column: "index", dtype: "string"})
+
+
+    const draw_kmer_hist = (species_list) => {
+        sum_df = df.loc({ columns: species_list }).sum({axis: 0});
+
+        let test = [{
+            x: sum_df.index,
+            y: sum_df.values,
+            type: 'bar'
+        }];
+
+        Plotly.newPlot('tester', test);
+
+    }
+
+    const draw_species_pie_chart = (k_mer) => {
+        const new_rows = df.index.filter((item) => item > k_mer)
+
+        console.log(new_rows)
+        sum_df = df.loc({rows: new_rows}).sum({axis: 1});
+
+        let test = [{
+            values: sum_df.values,
+            labels: sum_df.index,
+            type: 'pie'
+        }];
+
+        let layout = {
+            height: 400,
+            width: 500
+        };
+
+        Plotly.newPlot('tester_pie', test, layout);
+
+    }
+
+
+    species_list = df.columns
+
+    draw_kmer_hist(species_list)
+    draw_species_pie_chart(0.19)
+
+    species_list.map((item) => {
+        let toggle = document.createElement("label");
+        toggle.setAttribute("id", "toggle_"+item);
+        let checkbox = document.createElement("input");
+        checkbox.setAttribute("type", "checkbox");
+        checkbox.setAttribute("id", item);
+        checkbox.setAttribute("checked", true);
+        
+        checkbox.addEventListener("change", (change) => {
+            // console.log(change.target.id)
+            const item = change.target.id
+            if (species_list.includes(item)) {
+                item_index = species_list.indexOf(item);
+                species_list.splice(item_index, 1); 
+            } else {
+                species_list.push(item)
+            }
+            draw_kmer_hist(species_list)
+        })
+        toggle.appendChild(checkbox);
+        let label = document.createElement("span");
+        label.innerText = item;
+        toggle.appendChild(label);
+
+        species_container.appendChild(toggle);
+    })
+
+    const slider = document.getElementById("slider");
+    slider.setAttribute("min", Math.min(...df.index));
+    slider.setAttribute("max", Math.max(...df.index));
+    slider.setAttribute("value", Math.min(...df.index));
+    slider.setAttribute("step", 0.01);
+    slider.addEventListener("change", (event) => {
+        draw_species_pie_chart(event.target.value)
+    });
+    
+
+</script>
+
+</html>
