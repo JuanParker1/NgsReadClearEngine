@@ -1,9 +1,10 @@
-from flask import Flask, flash, request, redirect, url_for, render_template, Response
+from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify 
 from werkzeug.utils import secure_filename
 from Job_Manager_API import Job_Manager_API
 import os
 import warnings
 import time
+import pandas as pd
 
 
 #TODO think about it
@@ -61,6 +62,17 @@ def running_processes():
 @app.route('/admin/waiting')
 def waiting_processes():
     return render_template('waiting_processes.html', processes_ids=manager.get_waiting_process())
+
+@app.route('/interactive_page')
+def interactive_page():
+    df = pd.read_csv("/bioseq/data/results/genome_fltr/7f13cd6e-3ffe-4e1c-93c7-96ea539fdbde/preprocess.csv")
+    return jsonify(df.to_json())
+    
+@app.route('/results')
+def results():
+    df = pd.read_csv("/bioseq/data/results/genome_fltr/7f13cd6e-3ffe-4e1c-93c7-96ea539fdbde/preprocess.csv",index_col=0)
+    df = df.T
+    return render_template('results.html', data=df.to_json())
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
