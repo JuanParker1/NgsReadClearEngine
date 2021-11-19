@@ -1,5 +1,10 @@
 from pathlib import Path
 
+# OUTPUT consts
+K_MER_COUNTER_MATRIX_FILE_NAME = Path('CounterMatrixForUI.csv')
+PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path("/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py") # todo: replace this with real path
+K_MER_PRECISION_LIMIT = 100
+
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'
 JOB_NAME_COL = 'job_name'
@@ -47,5 +52,5 @@ cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
 {kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 {additional_parameters}
-
+python {path_to_output_processor} --outputFilePath "{kraken_results_path}" --KmerPrecisionLimit {K_mer_precision_limit} 
 '''
