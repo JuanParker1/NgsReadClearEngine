@@ -1,3 +1,6 @@
-import time
+from SearchEngine import SearchEngine
+
+
 if __name__ == '__main__':
-    time.sleep(60)
+    a = SearchEngine()
+    a.kraken_search("/groups/pupko/alburquerque/TestingKraken.txt",{})

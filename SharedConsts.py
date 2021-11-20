@@ -1,5 +1,10 @@
 from pathlib import Path
 
+# OUTPUT consts
+K_MER_COUNTER_MATRIX_FILE_NAME = Path('CounterMatrixForUI.csv')
+PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path("/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py") # todo: replace this with real path
+K_MER_PRECISION_LIMIT = 100
+
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'
 JOB_NAME_COL = 'job_name'
@@ -29,7 +34,7 @@ KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id
 KRAKEN_JOB_QUEUE_NAME = 'itaym'
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
 KRAKEN_JOB_PREFIX = 'KR'
-
+#todo: replace the conda env
 KRAKEN_JOB_TEMPLATE = '''
 #!/bin/bash
 
@@ -43,9 +48,10 @@ KRAKEN_JOB_TEMPLATE = '''
 #PBS -o {output_files_path}
 
 source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
 {kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 {additional_parameters}
-
+python {path_to_output_processor} --outputFilePath "{kraken_results_path}" --KmerPrecisionLimit {K_mer_precision_limit} 
 '''

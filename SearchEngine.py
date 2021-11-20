@@ -3,7 +3,9 @@ import pathlib
 import subprocess
 from subprocess import PIPE
 from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAND, KRAKEN_DB_NAME, KRAKEN_JOB_TEMPLATE,\
-    KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX
+    KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX, PATH_TO_OUTPUT_PROCESSOR_SCRIPT, \
+    K_MER_PRECISION_LIMIT
+
 
 class SearchEngine:
     """
@@ -56,6 +58,8 @@ class SearchEngine:
                                           kraken_base_folder=BASE_PATH_TO_KRAKEN_SCRIPT,
                                           kraken_command=kraken_run_command, db_path=db_path, query_path=query_path,
                                           kraken_results_path=result_path,
+                                          path_to_output_processor=str(PATH_TO_OUTPUT_PROCESSOR_SCRIPT),
+                                          K_mer_precision_limit=K_MER_PRECISION_LIMIT,
                                           additional_parameters=run_parameters_string)
 
     @staticmethod

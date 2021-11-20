@@ -8,8 +8,8 @@ from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME
 
 def process_output(**kwargs):
     # parse arguments
-    outputFilePath = Path(kwargs['outputFilePath'])
-    KmerPrecision = int(kwargs['KmerPrecisionLimit'])
+    outputFilePath = Path(kwargs['kwargs']['outputFilePath'])
+    KmerPrecision = int(kwargs['kwargs']['KmerPrecisionLimit'])
     processed_results_path = outputFilePath.parent / K_MER_COUNTER_MATRIX_FILE_NAME
 
     df_origin = pd.read_csv(outputFilePath,
@@ -35,7 +35,7 @@ def process_output(**kwargs):
 
 if __name__ == '__main__':
 
-    #process_output(kwargs={"outputFilePath":"/groups/pupko/alburquerque/kraken_out.txt","KmerPrecisionLimit":100})
+    process_output(kwargs={"outputFilePath":"/groups/pupko/alburquerque/kraken_out_1.txt","KmerPrecisionLimit":100})
     parser = argparse.ArgumentParser(description='Running RL project Main')
     parser.add_argument('--outputFilePath', default=None, help='path to output file to process')
     parser.add_argument('--KmerPrecisionLimit', default=100, help='K-mer Cutoff')  # todo write better help
