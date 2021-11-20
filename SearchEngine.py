@@ -6,6 +6,7 @@ from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAN
     KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX, PATH_TO_OUTPUT_PROCESSOR_SCRIPT, \
     K_MER_PRECISION_LIMIT
 
+
 class SearchEngine:
     """
     a class holding all code related to running the kraken2 search - assumes all inputs are valid

@@ -34,7 +34,7 @@ KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id
 KRAKEN_JOB_QUEUE_NAME = 'itaym'
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
 KRAKEN_JOB_PREFIX = 'KR'
-
+#todo: replace the conda env
 KRAKEN_JOB_TEMPLATE = '''
 #!/bin/bash
 
@@ -48,6 +48,7 @@ KRAKEN_JOB_TEMPLATE = '''
 #PBS -o {output_files_path}
 
 source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
