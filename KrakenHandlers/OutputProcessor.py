@@ -6,6 +6,9 @@ from pathlib import Path
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_FILE_NAME, DF_LOADER_CHUCK_SIZE, \
     RESULTS_COLUMNS_TO_KEEP
 
+# todo: clean this file up
+# todo : split classified and un classified before analyzing
+
 
 def process_output(**kwargs):
     # parse arguments
