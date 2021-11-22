@@ -2,8 +2,11 @@ from pathlib import Path
 
 # OUTPUT consts
 K_MER_COUNTER_MATRIX_FILE_NAME = Path('CounterMatrixForUI.csv')
+RESULTS_FOR_OUTPUT_FILE_NAME = Path('ResultsForPostProcess.csv')
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path("/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py") # todo: replace this with real path
-K_MER_PRECISION_LIMIT = 100
+DF_LOADER_CHUCK_SIZE = 1e3
+RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'classified_species', 'read_length',
+                           'all_classified_K_mers', 'split', 'max_k_mer_p']
 
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'

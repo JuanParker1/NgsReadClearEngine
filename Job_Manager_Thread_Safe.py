@@ -1,8 +1,7 @@
 from threading import Lock
-import uuid
 import datetime
 import os
-from SearchEngine import SearchEngine
+from KrakenHandlers.SearchEngine import SearchEngine
 from apscheduler.schedulers.background import BackgroundScheduler
 import JobListener
 import SharedConsts as sc
