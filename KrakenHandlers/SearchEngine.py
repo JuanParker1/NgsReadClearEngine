@@ -1,10 +1,10 @@
-import os
 import pathlib
 import subprocess
 from subprocess import PIPE
-from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAND, KRAKEN_DB_NAME, KRAKEN_JOB_TEMPLATE,\
+import os
+from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAND, KRAKEN_DB_NAME, KRAKEN_JOB_TEMPLATE, \
     KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX, PATH_TO_OUTPUT_PROCESSOR_SCRIPT, \
-    K_MER_PRECISION_LIMIT
+    CODE_BASE_PATH
 
 
 class SearchEngine:
@@ -25,7 +25,7 @@ class SearchEngine:
         temp_script_path = pathlib.Path().resolve() / f'temp_kraken_search_running_file_{job_unique_id}.sh'
         results_file_path = pathlib.Path(input_path).parent / 'results.txt'
         temp_script_text = SearchEngine._create_kraken_search_job_text(input_path, run_parameters,
-                                                                      job_unique_id, results_file_path)
+                                                                       job_unique_id, results_file_path)
 
         # run the job
         with open(temp_script_path, 'w+') as fp:
@@ -48,18 +48,17 @@ class SearchEngine:
         """
         run_parameters_string = SearchEngine._create_parameter_string(run_parameters)
         job_name = f'{KRAKEN_JOB_PREFIX}_{job_unique_id}'
-        kraken_run_command = BASE_PATH_TO_KRAKEN_SCRIPT/KRAKEN_SEARCH_SCRIPT_COMMAND
-        db_path = BASE_PATH_TO_KRAKEN_SCRIPT/KRAKEN_DB_NAME
+        kraken_run_command = BASE_PATH_TO_KRAKEN_SCRIPT / KRAKEN_SEARCH_SCRIPT_COMMAND
+        db_path = BASE_PATH_TO_KRAKEN_SCRIPT / KRAKEN_DB_NAME
         job_logs_path = str(pathlib.Path(query_path).parent) + '/'
         return KRAKEN_JOB_TEMPLATE.format(queue_name=KRAKEN_JOB_QUEUE_NAME,
                                           cpu_number=NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, job_name=job_name,
                                           error_files_path=job_logs_path,
                                           output_files_path=job_logs_path,
-                                          kraken_base_folder=BASE_PATH_TO_KRAKEN_SCRIPT,
+                                          kraken_base_folder=CODE_BASE_PATH,
                                           kraken_command=kraken_run_command, db_path=db_path, query_path=query_path,
                                           kraken_results_path=result_path,
                                           path_to_output_processor=str(PATH_TO_OUTPUT_PROCESSOR_SCRIPT),
-                                          K_mer_precision_limit=K_MER_PRECISION_LIMIT,
                                           additional_parameters=run_parameters_string)
 
     @staticmethod
