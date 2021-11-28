@@ -1,13 +1,41 @@
-<h3> Welcome, {{process_id}}! </h3>
-<h3> current state, {{state}}! </h3>
+{% extends 'base.html' %}
+{% block body %}
+
+
+<div id="main_screen" class="flex flex-col mx-auto  h-full justify-evenly items-center">
+
+	<h1 id="state_title" class="text-9xl my-5 select-none" >Job state: {{state}}</h1>
+
+	<img id="loading_gif" class="w-1/3 " src="../static/gifs/{{gif}}.gif" alt="loading page"/>
+</div>
+
 <script>
-	var targetContainer = document.getElementById("target_div");
-	var process_id = '{{process_id}}';
-	var eventSource = new EventSource("/stream")
-		eventSource.onmessage = function(e) {
-		if (process_id === e.data){
-			alert(e.data);
-			window.location.reload();
-		}
-	};
+	const hextable = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
+	function arrToHex(arr) {
+		let s = '#';
+			for (let i = 0; i < arr.length; i++) {
+				s += hextable[(arr[i] / 16) | 0];
+				s += hextable[arr[i] % 16 | 0];
+			}
+		return s;
+	}
+	const image = document.getElementById("loading_gif");
+	let canvas = document.createElement('canvas');
+	canvas.width = image.width;
+	canvas.height = image.height;
+	canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+	let corner_color = canvas.getContext('2d').getImageData(0, 0, 1, 1).data;
+	console.log(arrToHex(corner_color.slice(0,3)))
+	document.getElementById("main_screen").style.backgroundColor =  arrToHex(corner_color.slice(0,3));
+
+	let brightness = 0.34 * corner_color[0] + 0.5 * corner_color[1] + 0.16 * corner_color[2];
+	console.log(brightness)
+	if (brightness < 128) document.getElementById("main_screen").style.color = "#FFFFFF";
+	else document.getElementById("main_screen").style.color = "#000000";
+
 </script>
+
+{% endblock %}
+
+
+

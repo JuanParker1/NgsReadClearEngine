@@ -4,17 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Genomefltr</title>
-  <link rel="stylesheet" href="{{url_for('static',filename='css/main.css')}}">
+  <link rel="stylesheet" href="../static/css/main.css">
 </head>
 
 
 
-<body class="font-sans">
-  <div class='w-full h-screen bg-no-repeat bg-cover' 
+{% block body %}
+<div class='w-full h-screen bg-no-repeat bg-cover' 
        style="background-image: url('static/images/background.jpg')">
 
     <div class="flex flex-col mx-auto  h-full justify-evenly items-center">
-        <h1 class="text-8xl text-white">Read Filtration Made Easy</h1>
+        <div>
+          
+            <h1 class="text-9xl text-center text-white select-none my-5">Genomefltr</h1>
+    
+            <h1 class="text-8xl text-white select-none">Read Filtration Made Easy.</h1>
+        </div>
         <form class="flex flex-row " method=post enctype=multipart/form-data>
           <label
             class="
@@ -38,7 +43,7 @@
               duration-150
               mx-8
             ">
-            <span class="mt-2 text-base leading-normal">Select a file</span>
+            <span class="mt-2 text-base leading-normal select-none">Select file</span>
             <input  type="file" onchange="this.form.submit()" name=file class="hidden" />
           </label>
           <!-- <input class='rounded-full py-3 px-6' type=file name=file> -->
@@ -48,5 +53,5 @@
     </div>
   </div>
 </body>
-
+{% endblock %}
 </html>

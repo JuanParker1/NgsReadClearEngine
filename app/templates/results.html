@@ -15,18 +15,19 @@
   <div class='w-full h-screen bg-no-repeat bg-cover' 
        style="background-image: url('static/images/background.jpg')">
 
-    <div class="flex flex-col mx-auto  h-full justify-evenly items-center">
-        <div id="species_container"></div>
-        <div id="tester" style="width:600px;height:450px;"></div>
-        <div id="tester_pie" style="width:600px;height:450px;"></div>
-        <input id="slider" type="range">
+    <div class="flex flex-row mx-auto  h-full">
+        <div id="species_container">
+            <div id="tester"></div>
+        </div>
+        <div id="tester_pie"> 
+            <input id="slider" type="range">
+        </div>
     </div>
   </div>
 </body>
 <script>
     const species_container = document.getElementById("species_container");
     
-    let a = 5;
 
     let new_index = []
     let new_data = {}
@@ -37,50 +38,106 @@
     })
     new_index = new_index.map((item) => parseFloat(item))
     df = new dfd.DataFrame(new_data, {index: new_index});
+    
+    //updates when pressing checkboxes
+    let species_list = df.columns.filter(item => item != "Unclasified")
+    //updates when moving the slider
+    let k_mer_threshold = 0.01
 
-    // df = df.set_index({index: new_index, dtype: "string"})
-    // df = df.astype({column: "index", dtype: "string"})
+    const draw_kmer_hist = (species_list, k_mer_threshold) => {
 
 
-    const draw_kmer_hist = (species_list) => {
-        sum_df = df.loc({ columns: species_list }).sum({axis: 0});
+        sum_total_df = df.sum({axis: 0});
 
-        let test = [{
-            x: sum_df.index,
-            y: sum_df.values,
+        const y_max = sum_total_df.max();
+
+        
+        sum_classified_df = df.loc({ columns: species_list }).sum({axis: 0});
+
+        const classified_indexes = sum_classified_df.index
+
+        const classified_values = classified_indexes.map((index) => {
+            return index < k_mer_threshold ? 0 : sum_classified_df.loc([index]).values[0];
+        })
+
+        sum_classified_df = new dfd.Series(classified_values, { index: classified_indexes });
+
+        sum_unclassified_df = sum_total_df.sub(sum_classified_df)
+
+        let classified = {
+            x: sum_total_df.index,
+            y: sum_classified_df.values,
             type: 'bar'
-        }];
+        };
 
-        Plotly.newPlot('tester', test);
+        let unclassified = {
+            x: sum_total_df.index,
+            y: sum_unclassified_df.values,
+            type: 'bar'
+        };
+
+        const data = [unclassified, classified]
+
+        let layout = {
+            height: 480,
+            width: 640,
+            barmode: 'stack',
+            shapes: [
+    //line vertical
+            {
+
+            type: 'line',
+            x0: k_mer_threshold,
+            y0: 0,
+            x1: k_mer_threshold,
+            y1: y_max,
+            line: {
+                color: 'rgb(200, 200, 200)',
+                width: 4,
+                dash: 'dot'
+            }
+            }]
+        };
+
+        Plotly.newPlot('tester', data, layout, {staticPlot: true});
 
     }
 
-    const draw_species_pie_chart = (k_mer) => {
-        const new_rows = df.index.filter((item) => item > k_mer)
+    const draw_species_pie_chart = (species_list, k_mer_threshold) => {
 
-        console.log(new_rows)
-        sum_df = df.loc({rows: new_rows}).sum({axis: 1});
+        sum_total = df.sum({axis: 1}).sum({axis: 0});
 
-        let test = [{
-            values: sum_df.values,
-            labels: sum_df.index,
+
+        const threshold_list = df.index.filter(item => item >= k_mer_threshold)
+        
+        sum_classified_df = df.loc({ rows: threshold_list, columns: species_list }).sum({axis: 1});
+
+        sum_unclassified = sum_total - sum_classified_df.sum({axis: 0});
+
+        colors_classified = species_list.map(item => 'orange');
+        colors_classified.push('rgb(200, 200, 200)');
+
+        let pie_data = [{
+            values: [...sum_classified_df.values, sum_unclassified],
+            labels: [...sum_classified_df.index, "unclassified"],
+            marker: {
+                colors: colors_classified
+            },
             type: 'pie'
         }];
 
+
         let layout = {
-            height: 400,
-            width: 500
+            height: 480,
+            width: 640
         };
 
-        Plotly.newPlot('tester_pie', test, layout);
+        Plotly.newPlot('tester_pie', pie_data, layout, {staticPlot: true});
 
     }
-
-
-    species_list = df.columns
-
-    draw_kmer_hist(species_list)
-    draw_species_pie_chart(0.19)
+    
+    draw_kmer_hist(species_list, k_mer_threshold)
+    draw_species_pie_chart(species_list, k_mer_threshold)
 
     species_list.map((item) => {
         let toggle = document.createElement("label");
@@ -99,7 +156,8 @@
             } else {
                 species_list.push(item)
             }
-            draw_kmer_hist(species_list)
+            draw_species_pie_chart(species_list, k_mer_threshold)
+            draw_kmer_hist(species_list, k_mer_threshold)
         })
         toggle.appendChild(checkbox);
         let label = document.createElement("span");
@@ -115,7 +173,9 @@
     slider.setAttribute("value", Math.min(...df.index));
     slider.setAttribute("step", 0.01);
     slider.addEventListener("change", (event) => {
-        draw_species_pie_chart(event.target.value)
+        k_mer_threshold = event.target.value
+        draw_species_pie_chart(species_list, k_mer_threshold)
+        draw_kmer_hist(species_list, k_mer_threshold)
     });
     
 
