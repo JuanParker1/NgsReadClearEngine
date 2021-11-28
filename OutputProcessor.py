@@ -4,7 +4,8 @@ from operator import itemgetter
 from pathlib import Path
 import pandas as pd
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME, \
-    DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME
+    DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, \
+    UNCLASSIFIED_COLUMN_NAME
 import os
 
 def parse_kmer_data(kraken_raw_output_df):
@@ -80,6 +81,7 @@ def process_output(**kwargs):
         chunk = calc_kmer_statistics(chunk)
         chunk['max_k_mer_p'] = chunk['max_k_mer_p'].astype(float)
         chunk['all_classified_K_mers'] = chunk['all_classified_K_mers'].astype(str)
+        chunk['classified_species'] = chunk['classified_species'].astype(str)
 
         # separate unclassified and classified results
         unclassified_chunk = chunk[chunk['is_classified'] == 'U']
@@ -108,6 +110,12 @@ def process_output(**kwargs):
     df_preprocess.fillna(0, inplace=True)
     df_preprocess = df_preprocess.astype(int)
     df_preprocess = df_preprocess.groupby(df_preprocess.index).sum()
+    # add unclassified to matrix
+    df_preprocess[UNCLASSIFIED_COLUMN_NAME] = 0
+    line = pd.DataFrame(data=[[0 for i in df_preprocess.columns]], columns=df_preprocess.columns, index=[0.00])
+    line['unClassified'] = how_many_unclassified
+    df_preprocess = line.append(df_preprocess)
+
     df_preprocess.to_csv(processed_for_UI_results_path)
 
     # make sure permissions are good

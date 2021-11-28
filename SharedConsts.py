@@ -9,6 +9,7 @@ PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
 DF_LOADER_CHUCK_SIZE = 1e3
 RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'classified_species', 'read_length', 'max_k_mer_p',
                            'all_classified_K_mers', 'split']
+UNCLASSIFIED_COLUMN_NAME = 'unClassified'
 
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'
@@ -72,8 +73,10 @@ input_path="{path_to_classified_results}"
 output_path="{path_to_final_result_file}"
 output_pathTemp="Temp.csv"
 unclassified_path="{path_to_unclassified_results}"
+string='{species_to_filter_on}'
 
-cat "$input_path" | awk -F "\\"*,\\"*" ' $5 <= {classification_threshold}' > "$output_pathTemp"
+
+cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts," "); for (i in parts) dict[parts[i]]=""; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk 'NR!=1 {{print}}' > "$output_pathTemp"
 
 cat "$unclassified_path" "$output_pathTemp" >> "$output_path"
 
