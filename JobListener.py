@@ -1,13 +1,15 @@
-import subprocess
 import re
+import subprocess
+
 import pandas as pd
+
 from SharedConsts import QstatDataColumns, SRVER_USERNAME, KRAKEN_JOB_PREFIX, JOB_CHANGE_COLS, JOB_ELAPSED_TIME, \
     JOB_RUNNING_TIME_LIMIT_IN_HOURS, JOB_NUMBER_COL, LONG_RUNNING_JOBS_NAME, QUEUE_JOBS_NAME, NEW_RUNNING_JOBS_NAME, \
     FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, ERROR_JOBS_NAME
-import datetime
+
 
 class PbsListener:
-    
+
     def __init__(self, functions_to_call):
         self.functions = functions_to_call
         self.previous_state = None
@@ -103,8 +105,9 @@ class PbsListener:
         """
         # todo: discuss if we want to kill these jobs from here or not.
         temp_new_job_state = current_job_state
-        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].astype(str).replace('--','')
-        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].str.replace('','0').str.split(':')  # just care about the hours
+        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].astype(str).replace('--', '')
+        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].str.replace('', '0').str.split(
+            ':')  # just care about the hours
         temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].apply(lambda x: int(x[0]))
         long_running_jobs = temp_new_job_state[temp_new_job_state[JOB_ELAPSED_TIME] >= JOB_RUNNING_TIME_LIMIT_IN_HOURS][
             JOB_NUMBER_COL].values

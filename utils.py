@@ -1,12 +1,13 @@
 from enum import Enum
 
+
 class State(Enum):
     Running = 1
     Finished = 2
     Crashed = 3
     Waiting = 4
     Init = 5
-    
+
 
 def send_email(smtp_server, sender, receiver, subject='', content=''):
     from email.mime.text import MIMEText

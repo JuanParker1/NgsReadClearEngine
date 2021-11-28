@@ -9,11 +9,11 @@ class InputValidator:
                 return any(fasta)
             except Exception as e:
                 return False
-            
+
     def __is_fastq(self, filename):
         with open(filename, "r") as handle:
             fastq = SeqIO.parse(handle, "fastq")
-            
+
             try:
                 return any(fastq)
             except Exception as e:
