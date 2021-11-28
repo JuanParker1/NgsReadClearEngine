@@ -1,11 +1,12 @@
 import os
 import shutil
 import uuid
+import pandas as pd
 
 from InputValidator import InputValidator
 from Job_Manager_Thread_Safe import Job_Manager_Thread_Safe
 from utils import send_email, State
-
+from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME
 
 class Job_Manager_API:
     def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, func2update_html):
@@ -60,4 +61,11 @@ class Job_Manager_API:
         state = self.j_manager_thread_safe.get_job_state(process_id)
         if state:
             return state
+        return 'job unavialiable'
+        
+    def get_UI_matrix(self, process_id):
+        parent_folder = os.path.join(self.__upload_root_path, process_id)
+        csv_UI_matrix = os.path.join(parent_folder, K_MER_COUNTER_MATRIX_FILE_NAME)
+        if os.path.isfile(csv_UI_matrix):
+            return pd.read_csv(csv_UI_matrix,index_col=0)
         return 'job unavialiable'

@@ -10,6 +10,16 @@
 </div>
 
 <script>
+	//to listen for process updates
+	var process_id = '{{process_id}}';
+	var eventSource = new EventSource("/stream")
+		eventSource.onmessage = function(e) {
+		if (process_id === e.data){
+			alert(e.data);
+			window.location.reload();
+		}
+	}
+	
 	const hextable = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
 	function arrToHex(arr) {
 		let s = '#';
@@ -32,7 +42,7 @@
 	console.log(brightness)
 	if (brightness < 128) document.getElementById("main_screen").style.color = "#FFFFFF";
 	else document.getElementById("main_screen").style.color = "#000000";
-
+	
 </script>
 
 {% endblock %}
