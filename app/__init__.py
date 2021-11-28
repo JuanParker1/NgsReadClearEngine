@@ -1,12 +1,12 @@
+from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify 
+from werkzeug.utils import secure_filename
+from Job_Manager_API import Job_Manager_API
+from SharedConsts import UI_CONSTS
+from utils import State
 import os
 import time
 import warnings
 
-import pandas as pd
-from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify
-from werkzeug.utils import secure_filename
-
-from Job_Manager_API import Job_Manager_API
 
 # TODO think about it
 warnings.filterwarnings("ignore")
@@ -18,8 +18,8 @@ MAX_NUMBER_PROCESS = 3
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '168b36af-0822-4393-92c2-3e8592a48d2c'
-app.config['UPLOAD_FOLDERS_ROOT_PATH'] = UPLOAD_FOLDERS_ROOT_PATH  # path to folder
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000  # MAX file size to upload
+app.config['UPLOAD_FOLDERS_ROOT_PATH'] = UPLOAD_FOLDERS_ROOT_PATH # path to folder
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 # MAX file size to upload
 process_id2update = []
 
 
@@ -58,8 +58,10 @@ def allowed_file(filename):
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
     job_state = manager.get_job_state(process_id)
-    return render_template('file_download.html', process_id=process_id, state=job_state)
-
+    if job_state != State.Finished:
+        return render_template('file_download.html', process_id=process_id, state=job_state, gif=UI_CONSTS.states_gifs_dict[job_state])
+    else:
+        return redirect(url_for('results', process_id=process_id))
 
 @app.route('/admin/running')
 def running_processes():
@@ -69,19 +71,10 @@ def running_processes():
 @app.route('/admin/waiting')
 def waiting_processes():
     return render_template('waiting_processes.html', processes_ids=manager.get_waiting_process())
-
-
-@app.route('/interactive_page')
-def interactive_page():
-    df = pd.read_csv("/bioseq/data/results/genome_fltr/7f13cd6e-3ffe-4e1c-93c7-96ea539fdbde/preprocess.csv")
-    return jsonify(df.to_json())
-
-
-@app.route('/results')
-def results():
-    df = pd.read_csv("/bioseq/data/results/genome_fltr/7f13cd6e-3ffe-4e1c-93c7-96ea539fdbde/preprocess.csv",
-                     index_col=0)
-    df = df.T
+    
+@app.route('/results/<process_id>')
+def results(process_id):
+    df = manager.get_UI_matrix(process_id)
     return render_template('results.html', data=df.to_json())
 
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from utils import State
 
 # OUTPUT consts
 K_MER_COUNTER_MATRIX_FILE_NAME = Path('CounterMatrixForUI.csv')
@@ -82,3 +83,14 @@ cat "$unclassified_path" "$output_pathTemp" >> "$output_path"
 
 rm $output_pathTemp
 '''
+
+class UI_CONSTS:
+    static_folder_path = Path('/data/www/flask/fltr_backend/app/static/gifs/')
+    states_gifs_dict = {
+        State.Running: "loading4.gif",#self.static_folder_path / "loading4.gif",
+        State.Finished: "loading1.gif",
+        State.Crashed: "crashed", #TODO finish
+        State.Waiting: "loading3.gif",
+        State.Init: "loading2.gif",#self.static_folder_path / "loading2.gif",
+    }
+
