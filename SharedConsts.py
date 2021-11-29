@@ -4,13 +4,16 @@ from utils import State
 # OUTPUT consts
 K_MER_COUNTER_MATRIX_FILE_NAME = Path('CounterMatrixForUI.csv')
 RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME = Path('ResultsForPostProcessClassifiedRaw.csv')
+RESULTS_SUMMARY_FILE_NAME = Path('summary_results.txt')
 RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME = Path('ResultsForPostProcessUnClassifiedRaw.csv')
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
     "/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")  # todo: replace this with real path
-DF_LOADER_CHUCK_SIZE = 1e3
+DF_LOADER_CHUCK_SIZE = 1e6
 RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'classified_species', 'read_length', 'max_k_mer_p',
                            'all_classified_K_mers', 'split']
-UNCLASSIFIED_COLUMN_NAME = 'unClassified'
+SUMMARY_RESULTS_COLUMN_NAMES = ['percentage_of_reads', 'number_of_reads_under', 'number_of_reads_exact', 'rank_code',
+                                'ncbi_taxonomyID', 'name']
+UNCLASSIFIED_COLUMN_NAME = 'unclassified'
 
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'
@@ -61,7 +64,7 @@ conda activate
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
-{kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 --use-names {additional_parameters}
+{kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 --use-names --report {report_file_path} {additional_parameters}
 python {path_to_output_processor} --outputFilePath "{kraken_results_path}"
 '''
 
