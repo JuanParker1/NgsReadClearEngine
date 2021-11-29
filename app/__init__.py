@@ -1,4 +1,4 @@
-from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify 
+from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify, send_file
 from werkzeug.utils import secure_filename
 from Job_Manager_API import Job_Manager_API
 from SharedConsts import UI_CONSTS
@@ -29,23 +29,18 @@ def update_html(process_id, state):
         process_id2update.append(process_id)
 
 
-@app.route('/stream')
-def stream():
+@app.route('/stream/<process_id>')
+def stream(process_id):
     # function to stream data to client
-    def eventStream():
+    def eventStream(process_id):
         while True:
             if len(process_id2update):
-                for process_id in process_id2update:
-                    for i in range(2):
-                        time.sleep(0.1)
-                        print('__init__', f'eventStream(process_id = {process_id})')
-                        yield 'data: {}\n\n'.format(process_id)
-                process_id2update.clear()
+                if process_id in process_id2update:
+                    yield 'data: {}\n\n'.format(process_id)
+                    process_id2update.remove(process_id)
             else:
                 time.sleep(1)
-
-    return Response(eventStream(), mimetype="text/event-stream")
-
+    return Response(eventStream(process_id), mimetype="text/event-stream")
 
 manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FILE_NAME, update_html)
 
@@ -77,6 +72,13 @@ def results(process_id):
     df = manager.get_UI_matrix(process_id)
     return render_template('results.html', data=df.to_json())
 
+@app.route('/export/<process_id>', methods=['POST'])
+def export(process_id):
+    request_json = request.json
+    #TODO extract k_threshold and species_list
+    species_list, k_threshold = None, None
+    file2send = manager.export_file(process_id, species_list, k_threshold)
+    return send_file(file2send)
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():

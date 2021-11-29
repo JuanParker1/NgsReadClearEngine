@@ -50,7 +50,14 @@ class Job_Manager_API:
             self.j_manager_thread_safe.add_process(process_id)
             return True
         return False
-
+        
+    def export_file(self, process_id: str, species_list:list, k_threshold:float):
+        parent_folder = os.path.join(self.__upload_root_path, process_id)
+        csv_UI_matrix = os.path.join(parent_folder, K_MER_COUNTER_MATRIX_FILE_NAME)
+        if os.path.isfile(csv_UI_matrix):
+            return #TODO call postprocess with the species_list and k_threshold
+        return 'job unavialiable'
+        
     def get_running_process(self):
         return self.j_manager_thread_safe.get_running_process()
 
