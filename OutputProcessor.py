@@ -2,11 +2,12 @@ import argparse
 from itertools import groupby
 from operator import itemgetter
 from pathlib import Path
+import os
 import pandas as pd
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME, \
     DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, \
-    UNCLASSIFIED_COLUMN_NAME
-import os
+    UNCLASSIFIED_COLUMN_NAME, RESULTS_SUMMARY_FILE_NAME, SUMMARY_RESULTS_COLUMN_NAMES
+
 
 def parse_kmer_data(kraken_raw_output_df):
     """
@@ -24,6 +25,20 @@ def parse_kmer_data(kraken_raw_output_df):
         [int(y[1]) for y in group])) for key, group in groupby(x, key=itemgetter(0))])
 
     return kraken_raw_output_df
+
+
+def get_NCBI_renaming_dict(summary_res_path):
+    """
+    extracts the ncbi taxonomy data from the karaken summary file
+    :param summary_res_path: path to the relevant kraken
+    :return:
+    """
+    summary_res_df = pd.read_csv(summary_res_path, sep='\t', names=SUMMARY_RESULTS_COLUMN_NAMES)
+    temp_naming_df = summary_res_df[['ncbi_taxonomyID', 'name']]
+    temp_naming_df['name'] = temp_naming_df['name'].str.strip()
+    temp_naming_df['ncbi_taxonomyID'] = temp_naming_df['ncbi_taxonomyID'].astype(str)
+    renaming_dict = temp_naming_df.set_index('ncbi_taxonomyID').to_dict()['name']
+    return renaming_dict
 
 
 def calc_kmer_statistics(kmer_df):
@@ -63,6 +78,7 @@ def process_output(**kwargs):
         outputFilePath.parent / RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME
     processed_Classified_for_PostProcess_results_path = \
         outputFilePath.parent / RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME
+    results_summary_path = outputFilePath.parent / RESULTS_SUMMARY_FILE_NAME
     first = True
     how_many_unclassified = 0
     # make sure there are no old things that will make the df appending wrong
@@ -71,20 +87,30 @@ def process_output(**kwargs):
         if file.is_file():
             os.remove(str(file))
 
+    # prepare renaming dict
+    ncbi_renaming_dict = get_NCBI_renaming_dict(results_summary_path)
+
     # main processing loop
     for chunk in pd.read_csv(outputFilePath, sep='\t', header=None, chunksize=DF_LOADER_CHUCK_SIZE):
 
         # process the results
         chunk.rename(columns={0: 'is_classified', 1: "read_name", 2: "classified_species", 3: "read_length",
                               4: "all_classified_K_mers"}, inplace=True)
+        # calculations
         chunk = parse_kmer_data(chunk)
         chunk = calc_kmer_statistics(chunk)
+        # typing and naming
+        chunk.replace({"max_specie": ncbi_renaming_dict}, inplace=True)
         chunk['max_k_mer_p'] = chunk['max_k_mer_p'].astype(float)
         chunk['all_classified_K_mers'] = chunk['all_classified_K_mers'].astype(str)
         chunk['classified_species'] = chunk['classified_species'].astype(str)
 
         # separate unclassified and classified results
-        unclassified_chunk = chunk[chunk['is_classified'] == 'U']
+        # fix kraken mistakes
+        kraken_mistakes = chunk[(chunk['is_classified'] == 'C') & (chunk['max_specie'] == UNCLASSIFIED_COLUMN_NAME)]
+        chunk.drop(kraken_mistakes.index, inplace=True)
+        # actually separate
+        unclassified_chunk = chunk[chunk['is_classified'] == 'U'].append(kraken_mistakes)
         classified_chunk = chunk[chunk['is_classified'] == 'C']
         how_many_unclassified += len(unclassified_chunk.index)
 
@@ -113,7 +139,7 @@ def process_output(**kwargs):
     # add unclassified to matrix
     df_preprocess[UNCLASSIFIED_COLUMN_NAME] = 0
     line = pd.DataFrame(data=[[0 for i in df_preprocess.columns]], columns=df_preprocess.columns, index=[0.00])
-    line['unClassified'] = how_many_unclassified
+    line[UNCLASSIFIED_COLUMN_NAME] = how_many_unclassified
     df_preprocess = line.append(df_preprocess)
 
     df_preprocess.to_csv(processed_for_UI_results_path)
