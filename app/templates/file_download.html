@@ -5,14 +5,14 @@
 <div id="main_screen" class="flex flex-col mx-auto  h-full justify-evenly items-center">
 
 	<h1 id="state_title" class="text-9xl my-5 select-none" >Job state: {{state}}</h1>
-
-	<img id="loading_gif" class="w-1/3 " src="../static/gifs/{{gif}}.gif" alt="loading page"/>
+	
+	<img id="loading_gif" class="w-1/3 " src="{{url_for('static', filename=gif)}}" alt="loading page"/>
 </div>
 
 <script>
 	//to listen for process updates
 	var process_id = '{{process_id}}';
-	var eventSource = new EventSource("/stream")
+	var eventSource = new EventSource("/stream/" + process_id)
 		eventSource.onmessage = function(e) {
 		if (process_id === e.data){
 			alert(e.data);
