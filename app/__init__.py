@@ -4,11 +4,11 @@ from Job_Manager_API import Job_Manager_API
 from SharedConsts import UI_CONSTS
 from utils import State
 import os
-import time
 import warnings
+import time
 
 
-# TODO think about it
+#TODO think about it
 warnings.filterwarnings("ignore")
 
 UPLOAD_FOLDERS_ROOT_PATH = '/bioseq/data/results/genome_fltr/'
@@ -16,31 +16,39 @@ USER_FILE_NAME = 'reads.fasta'
 ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 MAX_NUMBER_PROCESS = 3
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '168b36af-0822-4393-92c2-3e8592a48d2c'
 app.config['UPLOAD_FOLDERS_ROOT_PATH'] = UPLOAD_FOLDERS_ROOT_PATH # path to folder
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 # MAX file size to upload
 process_id2update = []
 
-
 def update_html(process_id, state):
     print('__init__', f'update_html(process_id = {process_id})')
     if process_id:
         process_id2update.append(process_id)
 
+@app.route('/remove_update/<process_id>')
+def remove_update(process_id):
+    print(f'__init__ remove_update({process_id}, {type(process_id)})')
+    print(f'__init__ remove_update(process_id2update = {process_id2update})')
+    if process_id in process_id2update:
+        print(f'__init__ remove_update({process_id})')
+        process_id2update.remove(process_id)
+    return jsonify('data')
 
-@app.route('/stream/<process_id>')
-def stream(process_id):
+@app.route('/stream/')
+def stream():
     # function to stream data to client
-    def eventStream(process_id):
+    def eventStream():
         while True:
             if len(process_id2update):
-                if process_id in process_id2update:
+                for process_id in process_id2update:
                     yield 'data: {}\n\n'.format(process_id)
-                    process_id2update.remove(process_id)
+                    time.sleep(0.1)
             else:
                 time.sleep(1)
-    return Response(eventStream(process_id), mimetype="text/event-stream")
+    return Response(eventStream(), mimetype="text/event-stream")
 
 manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FILE_NAME, update_html)
 
@@ -48,7 +56,6 @@ manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FIL
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
@@ -62,7 +69,6 @@ def process_state(process_id):
 def running_processes():
     return render_template('runnning_processes.html', processes_ids=manager.get_running_process())
 
-
 @app.route('/admin/waiting')
 def waiting_processes():
     return render_template('waiting_processes.html', processes_ids=manager.get_waiting_process())
@@ -70,6 +76,9 @@ def waiting_processes():
 @app.route('/results/<process_id>')
 def results(process_id):
     df = manager.get_UI_matrix(process_id)
+    if isinstance(df, str):
+        #TODO handle
+        return render_template('file_download.html', process_id=process_id, state=State.Crashed, gif=UI_CONSTS.states_gifs_dict[State.Crashed])
     return render_template('results.html', data=df.to_json())
 
 @app.route('/export/<process_id>', methods=['POST'])
@@ -83,7 +92,7 @@ def export(process_id):
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        # print('__init__', 'upload_file()', f'request.files = {request.files}')
+        #print('__init__', 'upload_file()', f'request.files = {request.files}')
         # check if the post request has the file part
         if 'file' not in request.files:
             flash('No file part')

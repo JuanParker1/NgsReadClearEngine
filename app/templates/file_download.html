@@ -12,10 +12,21 @@
 <script>
 	//to listen for process updates
 	var process_id = '{{process_id}}';
-	var eventSource = new EventSource("/stream/" + process_id)
+	let did_sent = false
+	var eventSource = new EventSource("/stream/")
 		eventSource.onmessage = function(e) {
 		if (process_id === e.data){
-			alert(e.data);
+			if (!did_sent){
+				console.log(e)
+				var http = new XMLHttpRequest();
+				var url = 'http://localhost:8000/remove_update/' + process_id;
+				http.open('GET', url, true);
+
+				//Send the proper header information along with the request
+				http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+				http.send();
+				did_sent = true
+			}
 			window.location.reload();
 		}
 	}
