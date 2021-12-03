@@ -2,7 +2,7 @@ from flask import Flask, flash, request, redirect, url_for, render_template, Res
 from werkzeug.utils import secure_filename
 from Job_Manager_API import Job_Manager_API
 from SharedConsts import UI_CONSTS
-from utils import State
+from utils import State, logger
 import os
 import warnings
 import time
@@ -25,16 +25,15 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 # MAX file size to upload
 process_id2update = []
 
 def update_html(process_id, state):
-    print('__init__', f'update_html(process_id = {process_id})')
+    logger.info(f'process_id = {process_id} state = {state}')
     if process_id:
         process_id2update.append(process_id)
 
 @app.route('/remove_update/<process_id>')
 def remove_update(process_id):
-    print(f'__init__ remove_update({process_id}, {type(process_id)})')
-    print(f'__init__ remove_update(process_id2update = {process_id2update})')
+    logger.info(f'process_id = {process_id}')
     if process_id in process_id2update:
-        print(f'__init__ remove_update({process_id})')
+        logger.info(f'removing {process_id} from process_id2update')
         process_id2update.remove(process_id)
     return jsonify('data')
 
@@ -53,10 +52,10 @@ def stream():
                     time_broadcasting_process_event = requests_time_dict.get(process_id, 0)
                     time_broadcasting_process_event += TIME_BETWEEN_BROADCASTING_EVENTS
                     requests_time_dict[process_id] = time_broadcasting_process_event
-                print(process_id2update)
-                print(requests_time_dict)
+
                 max_broadcasting_event = max(requests_time_dict, key=requests_time_dict.get)
                 if requests_time_dict[max_broadcasting_event] >= TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC:
+                    logger.info(f'removing max_broadcasting_event = {process_id} as it reached the max amount of time broadcasting')
                     requests_time_dict.pop(max_broadcasting_event)
             else:
                 requests_time_dict.clear()
@@ -67,6 +66,7 @@ manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FIL
 
 
 def allowed_file(filename):
+    logger.debug(f'filename = {filename}')
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -90,8 +90,9 @@ def waiting_processes():
 def results(process_id):
     df = manager.get_UI_matrix(process_id)
     if isinstance(df, str):
-        #TODO handle
+        logger.error(f'process_id = {process_id}, df = {df}')
         return render_template('file_download.html', process_id=process_id, state=State.Crashed, gif=UI_CONSTS.states_gifs_dict[State.Crashed])
+    logger.info(f'process_id = {process_id}, df_path = {df}')
     return render_template('results.html', data=df.to_json())
 
 @app.route('/export/<process_id>', methods=['POST'])
@@ -105,10 +106,7 @@ def export(process_id):
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        #print('__init__', 'upload_file()', f'request.files = {request.files}')
-        # check if the post request has the file part
         if 'file' not in request.files:
-            flash('No file part')
             return redirect(request.url)
         file = request.files['file']
         # If the user does not select a file, the browser submits an
@@ -117,15 +115,16 @@ def upload_file():
             flash('No selected file')
             return redirect(request.url)
         if file and allowed_file(file.filename):
+            logger.info(f'file uploaded = {file}')
             filename = secure_filename(file.filename)
             new_process_id = manager.get_new_process_id()
             folder2save_file = os.path.join(app.config['UPLOAD_FOLDERS_ROOT_PATH'], new_process_id)
             os.mkdir(folder2save_file)
-            # TODO change file name
             file.save(os.path.join(folder2save_file, USER_FILE_NAME))
+            logger.info(f'file saved = {file}')
             man_results = manager.add_process(new_process_id)
+            logger.info(f'process added man_results = {man_results}, redirecting url')
             return redirect(url_for('process_state', process_id=new_process_id))
         else:
-            # TODO handle not allowed file extention
-            print('__init__', 'upload_file()', 'file extention not allowed')
+            logger.info(f'file extention not allowed')
     return render_template('home.html')

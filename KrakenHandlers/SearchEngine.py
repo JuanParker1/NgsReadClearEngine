@@ -2,6 +2,7 @@ import pathlib
 import subprocess
 from subprocess import PIPE
 import os
+from utils import logger
 from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAND, KRAKEN_DB_NAME, KRAKEN_JOB_TEMPLATE, \
     KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX, PATH_TO_OUTPUT_PROCESSOR_SCRIPT, \
     CODE_BASE_PATH, RESULTS_SUMMARY_FILE_NAME
@@ -32,10 +33,12 @@ class SearchEngine:
         # run the job
         with open(temp_script_path, 'w+') as fp:
             fp.write(temp_script_text)
+        logger.info(f'submitting job, temp_script_path = {temp_script_path}:')
+        logger.debug(f'{temp_script_text}')
         terminal_cmd = f'/opt/pbs/bin/qsub {str(temp_script_path)}'
         job_run_output = subprocess.run(terminal_cmd, stdout=PIPE, stderr=PIPE, shell=True)
         os.remove(temp_script_path)
-
+        
         return job_run_output.stdout.decode('utf-8').split('.')[0], results_file_path
 
     @staticmethod
