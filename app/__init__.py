@@ -15,6 +15,7 @@ UPLOAD_FOLDERS_ROOT_PATH = '/bioseq/data/results/genome_fltr/'
 USER_FILE_NAME = 'reads.fasta'
 ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 MAX_NUMBER_PROCESS = 3
+TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC = 1200
 
 
 app = Flask(__name__)
@@ -40,13 +41,25 @@ def remove_update(process_id):
 @app.route('/stream/')
 def stream():
     # function to stream data to client
+    requests_time_dict = {}
+    TIME_BETWEEN_BROADCASTING_EVENTS = 0.1
+    
     def eventStream():
         while True:
             if len(process_id2update):
                 for process_id in process_id2update:
                     yield 'data: {}\n\n'.format(process_id)
-                    time.sleep(0.1)
+                    time.sleep(TIME_BETWEEN_BROADCASTING_EVENTS)
+                    time_broadcasting_process_event = requests_time_dict.get(process_id, 0)
+                    time_broadcasting_process_event += TIME_BETWEEN_BROADCASTING_EVENTS
+                    requests_time_dict[process_id] = time_broadcasting_process_event
+                print(process_id2update)
+                print(requests_time_dict)
+                max_broadcasting_event = max(requests_time_dict, key=requests_time_dict.get)
+                if requests_time_dict[max_broadcasting_event] >= TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC:
+                    requests_time_dict.pop(max_broadcasting_event)
             else:
+                requests_time_dict.clear()
                 time.sleep(1)
     return Response(eventStream(), mimetype="text/event-stream")
 

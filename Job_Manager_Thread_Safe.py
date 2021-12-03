@@ -98,7 +98,7 @@ class Job_Manager_Thread_Safe:
         print('Job_Manager_Thread_Safe', f'__p_finished(pbs_id = {pbs_id})')
         self.__set_process_state(process_id, State.Finished)
         process2add = self.__pop_from_waiting_queue()
-        print('Job_Manager_Thread_Safe', f'__p_finished', f'process2add = {process2add}')
+        #print('Job_Manager_Thread_Safe', f'__p_finished', f'process2add = {process2add}')
         if process2add:
             self.add_process(process2add)
 
