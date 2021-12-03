@@ -19,7 +19,7 @@
 			if (!did_sent){
 				console.log(e)
 				var http = new XMLHttpRequest();
-				var url = 'http://localhost:8000/remove_update/' + process_id;
+				var url = '/remove_update/' + process_id;
 				http.open('GET', url, true);
 
 				//Send the proper header information along with the request
