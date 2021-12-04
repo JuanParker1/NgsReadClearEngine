@@ -7,6 +7,10 @@ K_MER_COUNTER_MATRIX_FILE_NAME = Path('CounterMatrixForUI.csv')
 RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME = Path('ResultsForPostProcessClassifiedRaw.csv')
 RESULTS_SUMMARY_FILE_NAME = Path('summary_results.txt')
 RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME = Path('ResultsForPostProcessUnClassifiedRaw.csv')
+TEMP_CLASSIFIED_IDS = Path('TempClassifiedIds.txt')
+TEMP_UNCLASSIFIED_IDS = Path('TempUnClassifiedIds.txt')
+INPUT_CLASSIFIED_FILE_NAME = Path('classified.fasta')
+INPUT_UNCLASSIFIED_FILE_NAME = Path('unclassified.fasta')
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
     "/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")  # todo: replace this with real path
 DF_LOADER_CHUCK_SIZE = 1e6
@@ -14,7 +18,7 @@ RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'classified_species', '
                            'all_classified_K_mers', 'split']
 SUMMARY_RESULTS_COLUMN_NAMES = ['percentage_of_reads', 'number_of_reads_under', 'number_of_reads_exact', 'rank_code',
                                 'ncbi_taxonomyID', 'name']
-UNCLASSIFIED_COLUMN_NAME = 'unclassified'
+UNCLASSIFIED_COLUMN_NAME = 'unclassified (taxid 0)'
 
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'
@@ -67,6 +71,9 @@ PYTHONPATH=$(pwd)
 
 {kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 --use-names --report {report_file_path} {additional_parameters}
 python {path_to_output_processor} --outputFilePath "{kraken_results_path}"
+cat {query_path} | seqkit grep -f {classified_ids_list}  -o {classified_ids_results}
+cat {query_path} | seqkit grep -f {unclassified_ids_list}  -o {unclassified_ids_results}
+rm {query_path}
 '''
 
 # post processing
@@ -74,18 +81,26 @@ python {path_to_output_processor} --outputFilePath "{kraken_results_path}"
 POST_PROCESS_COMMAND_TEMPLATE = '''
 #!/bin/bash          
 
+original_unclassified_data="{path_to_original_unclassified_data}"
+original_classified_data="{path_to_original_classified_data}"
 input_path="{path_to_classified_results}"
 output_path="{path_to_final_result_file}"
-output_pathTemp="Temp.csv"
+output_pathTemp="Temp.txt"
+Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
 unclassified_path="{path_to_unclassified_results}"
 string='{species_to_filter_on}'
 
+# filter kraken results by query name and threshold
+cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "\\"*,\\"*" 'NR!=1 {{print $2}}' > "$output_pathTemp"
 
-cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts," "); for (i in parts) dict[parts[i]]=""; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk 'NR!=1 {{print}}' > "$output_pathTemp"
+# filter original classified results
+cat "$original_classified_data" | seqkit grep -f "$output_pathTemp"  -o "$Temp_new_unclassified_seqs"
 
-cat "$unclassified_path" "$output_pathTemp" >> "$output_path"
+# combine original unfiltered input with newly unclassified results
+cat "$Temp_new_unclassified_seqs" "$original_unclassified_data" > "$output_path"
 
-rm $output_pathTemp
+rm "$output_pathTemp"
+rm "$Temp_new_unclassified_seqs"
 '''
 
 class UI_CONSTS:

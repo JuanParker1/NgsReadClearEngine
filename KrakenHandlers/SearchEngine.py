@@ -4,7 +4,8 @@ from subprocess import PIPE
 import os
 from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAND, KRAKEN_DB_NAME, KRAKEN_JOB_TEMPLATE, \
     KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX, PATH_TO_OUTPUT_PROCESSOR_SCRIPT, \
-    CODE_BASE_PATH, RESULTS_SUMMARY_FILE_NAME
+    CODE_BASE_PATH, RESULTS_SUMMARY_FILE_NAME, INPUT_CLASSIFIED_FILE_NAME, INPUT_UNCLASSIFIED_FILE_NAME, \
+    TEMP_CLASSIFIED_IDS, TEMP_UNCLASSIFIED_IDS
 
 
 class SearchEngine:
@@ -25,9 +26,12 @@ class SearchEngine:
         temp_script_path = pathlib.Path().resolve() / f'temp_kraken_search_running_file_{job_unique_id}.sh'
         results_file_path = pathlib.Path(input_path).parent / 'results.txt'
         report_path = pathlib.Path(input_path).parent / RESULTS_SUMMARY_FILE_NAME
+        classified_input_path = pathlib.Path(input_path).parent / INPUT_CLASSIFIED_FILE_NAME
+        unclassified_input_path = pathlib.Path(input_path).parent / INPUT_UNCLASSIFIED_FILE_NAME
         temp_script_text = SearchEngine._create_kraken_search_job_text(input_path, run_parameters,
                                                                        job_unique_id, results_file_path,
-                                                                       report_path)
+                                                                       report_path, classified_input_path,
+                                                                       unclassified_input_path)
 
         # run the job
         with open(temp_script_path, 'w+') as fp:
@@ -39,7 +43,8 @@ class SearchEngine:
         return job_run_output.stdout.decode('utf-8').split('.')[0], results_file_path
 
     @staticmethod
-    def _create_kraken_search_job_text(query_path, run_parameters, job_unique_id, result_path, report_path):
+    def _create_kraken_search_job_text(query_path, run_parameters, job_unique_id, result_path, report_path,
+                                       classified_input_path, unclassified_input_path):
         """
         this function creates the text for the .sh file that will run the job - assumes everything is valid
         :param query_path: path to the query file
@@ -47,6 +52,8 @@ class SearchEngine:
         :param job_unique_id: the jobs unique id (used to identify everything related to this run)
         :param result_path: where to put the kraken results
         :param report_path: where to put the kraken results report
+        :param classified_input_path: where to put the split classified input
+        :param unclassified_input_path: where to put the split unclassified input
         :return: the text for the .sh file
         """
         run_parameters_string = SearchEngine._create_parameter_string(run_parameters)
@@ -63,7 +70,11 @@ class SearchEngine:
                                           kraken_results_path=result_path,
                                           path_to_output_processor=str(PATH_TO_OUTPUT_PROCESSOR_SCRIPT),
                                           additional_parameters=run_parameters_string,
-                                          report_file_path=report_path)
+                                          report_file_path=report_path,
+                                          classified_ids_results=classified_input_path,
+                                          unclassified_ids_results=unclassified_input_path,
+                                          classified_ids_list=result_path.parent / TEMP_CLASSIFIED_IDS,
+                                          unclassified_ids_list=result_path.parent / TEMP_UNCLASSIFIED_IDS)
 
     @staticmethod
     def _create_parameter_string(run_parameters):

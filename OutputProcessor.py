@@ -6,7 +6,8 @@ import os
 import pandas as pd
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME, \
     DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, \
-    UNCLASSIFIED_COLUMN_NAME, RESULTS_SUMMARY_FILE_NAME, SUMMARY_RESULTS_COLUMN_NAMES
+    UNCLASSIFIED_COLUMN_NAME, RESULTS_SUMMARY_FILE_NAME, SUMMARY_RESULTS_COLUMN_NAMES, TEMP_CLASSIFIED_IDS, \
+    TEMP_UNCLASSIFIED_IDS
 
 
 def parse_kmer_data(kraken_raw_output_df):
@@ -37,6 +38,7 @@ def get_NCBI_renaming_dict(summary_res_path):
     temp_naming_df = summary_res_df[['ncbi_taxonomyID', 'name']]
     temp_naming_df['name'] = temp_naming_df['name'].str.strip()
     temp_naming_df['ncbi_taxonomyID'] = temp_naming_df['ncbi_taxonomyID'].astype(str)
+    temp_naming_df['name'] = temp_naming_df['name'] + ' (taxid ' + temp_naming_df['ncbi_taxonomyID'] + ')'
     renaming_dict = temp_naming_df.set_index('ncbi_taxonomyID').to_dict()['name']
     return renaming_dict
 
@@ -79,8 +81,15 @@ def process_output(**kwargs):
     processed_Classified_for_PostProcess_results_path = \
         outputFilePath.parent / RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME
     results_summary_path = outputFilePath.parent / RESULTS_SUMMARY_FILE_NAME
+    temp_unclass_path = outputFilePath.parent / TEMP_UNCLASSIFIED_IDS
+    temp_class_path = outputFilePath.parent / TEMP_CLASSIFIED_IDS
+
     first = True
     how_many_unclassified = 0
+    # used later to prepare the files for faster post process
+    classified_ids = []
+    unclassified_ids = []
+
     # make sure there are no old things that will make the df appending wrong
     for file in [processed_Classified_for_PostProcess_results_path, processed_Unclassified_for_PostProcess_results_path,
                  processed_for_UI_results_path]:
@@ -106,7 +115,7 @@ def process_output(**kwargs):
         chunk['classified_species'] = chunk['classified_species'].astype(str)
 
         # separate unclassified and classified results
-        # fix kraken mistakes
+        # fix kraken discrepancy with us
         kraken_mistakes = chunk[(chunk['is_classified'] == 'C') & (chunk['max_specie'] == UNCLASSIFIED_COLUMN_NAME)]
         chunk.drop(kraken_mistakes.index, inplace=True)
         # actually separate
@@ -118,6 +127,9 @@ def process_output(**kwargs):
         df_preprocess_temp = pd.crosstab(classified_chunk.max_specie, classified_chunk.bins_max_k_mer_p).T
 
         # save results:
+        classified_ids += list(classified_chunk["read_name"])
+        unclassified_ids += list(unclassified_chunk["read_name"])
+
         if first:
             unclassified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Unclassified_for_PostProcess_results_path),
                                                                mode='a', header=True, index=False)
@@ -143,6 +155,14 @@ def process_output(**kwargs):
     df_preprocess = line.append(df_preprocess)
 
     df_preprocess.to_csv(processed_for_UI_results_path)
+
+    # create search lists for SeqKit
+    classified_ids_string = '\n'.join(classified_ids)
+    unclassified_ids_string = '\n'.join(unclassified_ids)
+    with open(temp_class_path, 'w') as fp:
+        fp.write(classified_ids_string)
+    with open(temp_unclass_path, 'w') as fp:
+        fp.write(unclassified_ids_string)
 
     # make sure permissions are good
     processed_for_UI_results_path.chmod(777)
