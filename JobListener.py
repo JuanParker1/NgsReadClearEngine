@@ -1,13 +1,15 @@
-import subprocess
 import re
+import subprocess
+
 import pandas as pd
+from utils import logger
 from SharedConsts import QstatDataColumns, SRVER_USERNAME, KRAKEN_JOB_PREFIX, JOB_CHANGE_COLS, JOB_ELAPSED_TIME, \
     JOB_RUNNING_TIME_LIMIT_IN_HOURS, JOB_NUMBER_COL, LONG_RUNNING_JOBS_NAME, QUEUE_JOBS_NAME, NEW_RUNNING_JOBS_NAME, \
     FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, ERROR_JOBS_NAME
-import datetime
+
 
 class PbsListener:
-    
+
     def __init__(self, functions_to_call):
         self.functions = functions_to_call
         self.previous_state = None
@@ -48,17 +50,22 @@ class PbsListener:
             if job_status == 'R':
                 # case where job finished
                 if job_row['origin'] == 'P':
+                    logger.debug(f'job_row = {job_row} finished')
                     self.functions[FINISHED_JOBS_NAME](job_number)
                 # case of newly running job
                 elif job_row['origin'] == 'N':
+                    logger.debug(f'job_row = {job_row} running')
                     self.functions[NEW_RUNNING_JOBS_NAME](job_number)
                 else:
                     self.functions[WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
             elif job_status == 'Q':
+                logger.info(f'job_row = {job_row} queue')
                 self.functions[QUEUE_JOBS_NAME](job_number)
             elif job_status == 'E':
+                logger.warning(f'job_row = {job_row} error')
                 self.functions[ERROR_JOBS_NAME](job_number)
             else:
+                logger.warning(f'job_row = {job_row} weird behavior')
                 self.functions[WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
 
     def get_server_job_stats(self):
@@ -103,8 +110,9 @@ class PbsListener:
         """
         # todo: discuss if we want to kill these jobs from here or not.
         temp_new_job_state = current_job_state
-        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].astype(str).replace('--','')
-        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].str.replace('','0').str.split(':')  # just care about the hours
+        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].astype(str).replace('--', '')
+        temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].str.replace('', '0').str.split(
+            ':')  # just care about the hours
         temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].apply(lambda x: int(x[0]))
         long_running_jobs = temp_new_job_state[temp_new_job_state[JOB_ELAPSED_TIME] >= JOB_RUNNING_TIME_LIMIT_IN_HOURS][
             JOB_NUMBER_COL].values
