@@ -1,13 +1,12 @@
 import datetime
 import os
 from threading import Lock
-
 from apscheduler.schedulers.background import BackgroundScheduler
-
 import JobListener
 import SharedConsts as sc
 from KrakenHandlers.SearchEngine import SearchEngine
-from utils import State
+from utils import State, logger, LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE
+logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE)
 
 
 class Job_State:
@@ -65,81 +64,72 @@ class Job_Manager_Thread_Safe:
                 break
         self.__mutex_processes_state_dict.release()
         if not process_id2return:
-            # TODO handle
-            print('Job_Manager_Thread_Safe', f'__calc_process_id(pbs_id = {pbs_id})',
-                  f'process not found in dict = {self.__processes_state_dict}')
+            logger.warning(f'clean_pbs_id = {clean_pbs_id} not in __processes_state_dict')
         return process_id2return
 
     def __p_long_running(self, pbs_id):
-        print('Job_Manager_Thread_Safe', '__p_long_running()')
+        logger.warning(f'pbs_id = {pbs_id}')
         # TODO handle
         pass
 
     def __p_running(self, pbs_id):
         process_id = self.__calc_process_id(pbs_id)
-        print('Job_Manager_Thread_Safe', f'__p_running(pbs_id = {pbs_id}) process_id = {process_id}')
+        logger.info(f'pbs_id = {pbs_id} process_id = {process_id}')
         self.__set_process_state(process_id, State.Running)
 
     def __p_error(self, pbs_id):
         process_id = self.__calc_process_id(pbs_id)
-        print('Job_Manager_Thread_Safe', f'__p_error(process_id = {process_id})')
+        logger.warning(f'pbs_id = {pbs_id} process_id = {process_id}')
         self.__set_process_state(process_id, State.Crashed)
         process2add = self.__pop_from_waiting_queue()
         if process2add:
             self.add_process(process2add)
 
     def __p_Q(self, pbs_id):
-        print('Job_Manager_Thread_Safe', f'__p_Q()')
+        logger.warning(f'pbs_id = {pbs_id}')
         # TODO handle
         pass
 
     def __p_finished(self, pbs_id):
         process_id = self.__calc_process_id(pbs_id)
-        print('Job_Manager_Thread_Safe', f'__p_finished(pbs_id = {pbs_id})')
+        logger.info(f'pbs_id = {pbs_id} process_id = {process_id}')
         self.__set_process_state(process_id, State.Finished)
         process2add = self.__pop_from_waiting_queue()
-        #print('Job_Manager_Thread_Safe', f'__p_finished', f'process2add = {process2add}')
         if process2add:
+            logger.debug(f'adding new process after processed finished')
             self.add_process(process2add)
 
     def __set_process_state(self, process_id, state):
-        print('Job_Manager_Thread_Safe', f'__set_process_state(process_id = {process_id} state = {state})')
+        logger.info(f'process_id = {process_id}, state = {state}')
         self.__mutex_processes_state_dict.acquire()
         if process_id in self.__processes_state_dict:
             self.__processes_state_dict[process_id].set_state(state)
         else:
             # TODO handle
-            print('Job_Manager_Thread_Safe', '__set_process_state()',
-                  f'process_id {process_id} not in dict state {state}')
-            print('Job_Manager_Thread_Safe', '__set_process_state()',
-                  f'self.__processes_state_dict = {self.__processes_state_dict}')
+            logger.warning(f'process_id {process_id} not in __processes_state_dict: {__processes_state_dict}')
         self.__mutex_processes_state_dict.release()
-        print('Job_Manager_Thread_Safe', f'__set_process_state calling __func2update_html')
         self.__func2update_html(process_id, state)
 
     def add_process(self, process_id: str):
         # don't put inside the mutex area - the funciton acquire the mutex too
         running_processes = self.__calc_num_running_processes()
         self.__mutex_processes_state_dict.acquire()
-
-        if running_processes <= self.max_number_of_process:
+        if running_processes < self.max_number_of_process:
             if process_id not in self.__processes_state_dict:
                 process_folder_path = os.path.join(self.upload_root_path, process_id)
                 file2fltr = os.path.join(process_folder_path, self.__input_file_name)
-                print('Job_Manager_Thread_Safe', '--before add_process()--')
                 pbs_id, _ = self.__search_engine.kraken_search(file2fltr, None)
-                print('Job_Manager_Thread_Safe', '--add_process()--', 'job submitted', f'pbs id {pbs_id}')
+                logger.debug(f'process_id = {process_id} kraken process started, pbs_id = {pbs_id}')
                 self.__processes_state_dict[process_id] = Job_State(process_folder_path, pbs_id)
             else:
                 # TODO handle exception
-                print('add_process(): process id', process_id, 'already in processes_state_dict')
+                logger.error('already in processes_state_dict')
         else:
-            # TODO handle
-            print('Job_Manager_Thread_Safe', 'add_process()', 'too many processes, adding to wait list')
+            logger.info(f'process_id = {process_id} adding to waiting list')
             self.__mutex_processes_waiting_queue.acquire()
             self.__waiting_list.append(process_id)
             self.__mutex_processes_waiting_queue.release()
-
+            
         self.__mutex_processes_state_dict.release()
 
     def get_running_process(self):
@@ -162,11 +152,14 @@ class Job_Manager_Thread_Safe:
         if len(self.__waiting_list) > 0:
             process2return = self.__waiting_list.pop(0)
         self.__mutex_processes_waiting_queue.release()
+        logger.info(f'process2return = {process2return}')
         return process2return
 
     def get_job_state(self, process_id: str):
+        state2return = None
         if process_id in self.__processes_state_dict:
-            return self.__processes_state_dict[process_id].state
+            state2return = self.__processes_state_dict[process_id].state
         if process_id in self.__waiting_list:
-            return State.Waiting
-        return None
+            state2return = State.Waiting
+        logger.info(f'state2return = {state2return}')
+        return state2return
