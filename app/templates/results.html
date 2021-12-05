@@ -81,7 +81,6 @@
 </head>
 
 
-
 <body class="font-sans">
   <div class='w-full h-screen bg-no-repeat bg-cover bg-white' >
 
@@ -96,19 +95,17 @@
             </div>
         </div>
     </div>
-  </div>
+</div>
 </body>
 
 <script> 
 
     const species_container = document.getElementById("species_container");
-    
-
     let new_index = []
     let new_data = {}
     const json_data = JSON.parse('{{ data|safe }}');
     Object.entries(json_data).map(([key, val]) => {
-        new_data[key] =  Object.values(val);
+        new_data[key] = Object.values(val);
         new_index = Object.keys(val);
     })
     new_index = new_index.map((item) => parseFloat(item))
@@ -261,18 +258,18 @@
 
     species_list.map((item) => {
         let toggle = document.createElement("label");
-        toggle.setAttribute("id", "toggle_"+item);
+        toggle.setAttribute("id", "toggle_" + item);
         let checkbox = document.createElement("input");
         checkbox.setAttribute("type", "checkbox");
         checkbox.setAttribute("id", item);
         checkbox.setAttribute("class", "h-5 w-5")
         checkbox.setAttribute("checked", true);
-        
+
         checkbox.addEventListener("change", (change) => {
             const item = change.target.id
             if (species_list.includes(item)) {
                 item_index = species_list.indexOf(item);
-                species_list.splice(item_index, 1); 
+                species_list.splice(item_index, 1);
             } else {
                 species_list.push(item)
             }
