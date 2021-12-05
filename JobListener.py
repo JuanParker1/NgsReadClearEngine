@@ -73,7 +73,7 @@ class PbsListener:
         gets the users current job statistics (running and queued) and parses them
         :return: a data frame of all current jobs
         """
-        result = subprocess.run(['qstat', f'-u {SRVER_USERNAME}'], stdout=subprocess.PIPE)
+        result = subprocess.run(['/opt/pbs/bin/qstat', f'-u {SRVER_USERNAME}'], stdout=subprocess.PIPE)
         result_lines = (str(result.stdout).split('\\n'))[5:-1]  # irrelevant text from qstat
         tmp_results_params = [re.sub('\s+', ' ', x).split(' ') for x in result_lines]  # remove spaces and turn to data
         results_params = [i[:11] for i in tmp_results_params]

@@ -94,6 +94,11 @@
                 <canvas style="height: 480px; width: 640px" id="pie_chart"> </canvas>
             </div>
         </div>
+        <form id="export_btn" action="" method="POST">
+            <input type="hidden" id="k_mer_threshold" name="k_mer_threshold" value="">
+            <input type="hidden" id="species_list" name="species_list" value="">
+            <input type="submit" value="Export">
+        </form>
     </div>
 </div>
 </body>
@@ -101,6 +106,7 @@
 <script> 
 
     const species_container = document.getElementById("species_container");
+    
     let new_index = []
     let new_data = {}
     const json_data = JSON.parse('{{ data|safe }}');
@@ -123,6 +129,7 @@
     let k_mer_threshold = 0.01
 
     const update_k_mer_threshold = (new_val) => {
+        document.getElementById("k_mer_threshold").value = new_val;
         k_mer_threshold = new_val;
     }
 
@@ -273,8 +280,10 @@
             } else {
                 species_list.push(item)
             }
-            draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold)
-            draw_species_pie_chart(pie_chart ,species_list, k_mer_threshold)
+            //update the species_list to sent to backend
+            document.getElementById("species_list").value = [...species_list];
+            draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold);
+            draw_species_pie_chart(pie_chart ,species_list, k_mer_threshold);
         })
         toggle.appendChild(checkbox);
         let label = document.createElement("span");
@@ -283,6 +292,8 @@
 
         species_container.appendChild(toggle);
     })
+    
+    
 </script>
 
 </html>
