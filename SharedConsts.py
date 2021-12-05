@@ -11,6 +11,7 @@ TEMP_CLASSIFIED_IDS = Path('TempClassifiedIds.txt')
 TEMP_UNCLASSIFIED_IDS = Path('TempUnClassifiedIds.txt')
 INPUT_CLASSIFIED_FILE_NAME = Path('classified.fasta')
 INPUT_UNCLASSIFIED_FILE_NAME = Path('unclassified.fasta')
+FINAL_OUTPUT_FILE_NAME = Path('FilteredResults.fasta')
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
     "/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")  # todo: replace this with real path
 DF_LOADER_CHUCK_SIZE = 1e6
