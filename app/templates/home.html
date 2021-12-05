@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Genomefltr</title>
-  <link rel="stylesheet" href="../static/css/main.css">
-</head>
+{% extends 'base.html' %}
 
 
 
@@ -17,9 +10,9 @@
     <div class="flex flex-col mx-auto  h-full justify-evenly items-center">
         <div>
           
-            <h1 class="text-9xl text-center text-white select-none my-5">Genomefltr</h1>
+            <h1 class="text-9xl text-center text-white select-none my-5 ">Genomefltr</h1>
     
-            <h1 class="text-8xl text-white select-none">Read Filtration Made Easy.</h1>
+            <h1 class="text-8xl text-white select-none ">Read Filtration Made Easy.</h1>
         </div>
         <form class="flex flex-row " method=post enctype=multipart/form-data>
             <label
@@ -44,7 +37,7 @@
               duration-150
               mx-8
             ">
-            <span class="mt-2 text-base leading-normal select-none">Select file</span>
+            <span class="mt-2 text-base leading-normal select-none animate-bounce ">Select file</span>
             <input  type="file" onchange="this.form.submit()" name=file class="hidden" />
           </label>
           <!-- <input class='rounded-full py-3 px-6' type=file name=file> -->
@@ -56,4 +49,3 @@
 </div>
 </body>
 {% endblock %}
-</html>
