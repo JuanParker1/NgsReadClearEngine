@@ -4,7 +4,7 @@ import logging
 import os
 
 
-logging_file_name = os.path.join('/data/www/flask/fltr_backend/logs/', datetime.now().strftime('%Y_%m_%d.log'))
+logging_file_name = os.path.join('/data/www/flask/fltr_backend/logs/', datetime.now().strftime('%Y_%m_%d_%H:%M.log'))
 logging.basicConfig(filename = logging_file_name, level=logging.WARNING, format='%(asctime)s[%(levelname)s][%(filename)s][%(funcName)s]: %(message)s')
 logger = logging.getLogger('main')
 LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE = logging.DEBUG

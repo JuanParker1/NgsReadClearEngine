@@ -31,4 +31,4 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
                                                           path_to_original_unclassified_data=path_to_original_unclassified_data,
                                                           path_to_original_classified_data=path_to_original_classified_data)
     subprocess.call(command_to_run, stdout=PIPE, stderr=PIPE, shell=True)
-
+    return path_to_final_result_file
