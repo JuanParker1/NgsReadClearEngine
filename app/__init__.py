@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 UPLOAD_FOLDERS_ROOT_PATH = '/bioseq/data/results/genome_fltr/'
 USER_FILE_NAME = 'reads.fasta'
-ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'png', 'jpg', 'jpeg', 'gif', 'pdf'}
+ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
 MAX_NUMBER_PROCESS = 3
 TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC = 1200
 
@@ -21,7 +21,7 @@ TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC = 1200
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '168b36af-0822-4393-92c2-3e8592a48d2c'
 app.config['UPLOAD_FOLDERS_ROOT_PATH'] = UPLOAD_FOLDERS_ROOT_PATH # path to folder
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 # MAX file size to upload
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 * 1000 # MAX file size to upload
 process_id2update = []
 
 def update_html(process_id, state):
@@ -86,22 +86,24 @@ def running_processes():
 def waiting_processes():
     return render_template('waiting_processes.html', processes_ids=manager.get_waiting_process())
     
-@app.route('/results/<process_id>')
+@app.route('/results/<process_id>', methods=['GET', 'POST'])
 def results(process_id):
-    df = manager.get_UI_matrix(process_id)
-    if isinstance(df, str):
-        logger.error(f'process_id = {process_id}, df = {df}')
-        return render_template('file_download.html', process_id=process_id, state=State.Crashed, gif=UI_CONSTS.states_gifs_dict[State.Crashed])
-    logger.info(f'process_id = {process_id}, df_path = {df}')
+    # export
+    if request.method == 'POST':
+        data = request.form
+        species_list, k_threshold = data['species_list'].split(','), float(data['k_mer_threshold'])
+        logger.info(f'exporting, process_id = {process_id}, k_threshold = {k_threshold}, species_list = {species_list}')
+        file2send = manager.export_file(process_id, species_list, k_threshold)
+        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
+        return send_file(file2send)
+    # results
+    else:
+        df = manager.get_UI_matrix(process_id)
+        if isinstance(df, str):
+            logger.error(f'process_id = {process_id}, df = {df}')
+            return render_template('file_download.html', process_id=process_id, state=State.Crashed, gif=UI_CONSTS.states_gifs_dict[State.Crashed])
+        logger.info(f'process_id = {process_id}, df = {df}')
     return render_template('results.html', data=df.to_json())
-
-@app.route('/export/<process_id>', methods=['POST'])
-def export(process_id):
-    request_json = request.json
-    #TODO extract k_threshold and species_list
-    species_list, k_threshold = None, None
-    file2send = manager.export_file(process_id, species_list, k_threshold)
-    return send_file(file2send)
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -120,7 +122,10 @@ def upload_file():
             new_process_id = manager.get_new_process_id()
             folder2save_file = os.path.join(app.config['UPLOAD_FOLDERS_ROOT_PATH'], new_process_id)
             os.mkdir(folder2save_file)
-            file.save(os.path.join(folder2save_file, USER_FILE_NAME))
+            if not filename.endswith('gz'):
+                file.save(os.path.join(folder2save_file, USER_FILE_NAME))
+            else:
+                file.save(os.path.join(folder2save_file, USER_FILE_NAME + '.gz'))
             logger.info(f'file saved = {file}')
             man_results = manager.add_process(new_process_id)
             logger.info(f'process added man_results = {man_results}, redirecting url')
