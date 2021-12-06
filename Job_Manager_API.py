@@ -43,6 +43,11 @@ class Job_Manager_API:
             logger.warning(f'process_id = {process_id} doen\'t have a dir')
             return False
         file2check = os.path.join(parent_folder, self.__input_file_name)
+        if not os.path.isfile(file2check):
+            file2check += '.gz' #maybe it is zipped
+            if not os.path.isfile(file2check):
+                logger.warning(f'process_id = {process_id} doen\'t have a file')
+                return False
         if self.input_validator.validate_input_file(file2check):
             return True
         self.__delete_folder(process_id)
