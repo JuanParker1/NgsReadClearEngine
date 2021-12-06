@@ -5,6 +5,7 @@ import pandas as pd
 from InputValidator import InputValidator
 from Job_Manager_Thread_Safe import Job_Manager_Thread_Safe
 from utils import send_email, State, logger, LOGGER_LEVEL_JOB_MANAGE_API
+from KrakenHandlers.SearchResultAnalyzer import run_post_process
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME
 logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_API)
 
@@ -60,11 +61,12 @@ class Job_Manager_API:
         
     def export_file(self, process_id: str, species_list:list, k_threshold:float):
         parent_folder = os.path.join(self.__upload_root_path, process_id)
-        csv_UI_matrix = os.path.join(parent_folder, K_MER_COUNTER_MATRIX_FILE_NAME)
-        if os.path.isfile(csv_UI_matrix):
-            return #TODO call postprocess with the species_list and k_threshold
+        if os.path.isdir(parent_folder):
+            file2return = run_post_process(parent_folder, k_threshold, species_list)
+            if os.path.isfile(file2return):
+                return file2return
         logger.warning(f'process_id = {process_id} doen\'t have a result file')
-        return 'job unavialiable'
+        return 'result file unavialiable'
         
     def get_running_process(self):
         return self.j_manager_thread_safe.get_running_process()
