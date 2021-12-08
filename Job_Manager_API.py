@@ -19,17 +19,21 @@ class Job_Manager_API:
         self.input_validator = InputValidator()
         self.func2update_html = func2update_html
 
-    def __process_state_changed(self, process_id, state):
+    def __build_and_send_mail(self, process_id, state, email_address):
+        try:
+            send_email('mxout.tau.ac.il', 'TAU BioSequence <bioSequence@tauex.tau.ac.il>',
+                       email_address, subject=f'{process_id} process_id {state}.',
+                       content=f'http://localhost:8000/process_state/{process_id}')
+            logger.info(f'sent email to {email_address}')
+        except:
+            logger.exception(f'failed to sent email to {email_address}')
+
+    def __process_state_changed(self, process_id, state, email_address):
         if state == State.Finished:
-            #TODO chane
-            email_address = 'edodotan@mail.tau.ac.il'
-            try:
-                send_email('mxout.tau.ac.il', 'TAU BioSequence <bioSequence@tauex.tau.ac.il>',
-                           email_address, subject=f'{process_id} process_id {state}.',
-                           content=f'http://localhost:8000/process_state/{process_id}')
-                logger.info(f'sent email to {email_address}')
-            except:
-                logger.exception(f'failed to sent email to {email_address}')
+            if email_address != None:
+                self.__build_and_send_mail(process_id, state, email_address)
+        elif state == State.Crashed:
+            self.__build_and_send_mail(process_id, state, 'elya.wygoda@gmail.com')
         self.func2update_html(process_id, state)
 
     def __delete_folder(self, process_id):
@@ -53,14 +57,22 @@ class Job_Manager_API:
         self.__delete_folder(process_id)
         logger.warning(f'validation failed {file2check}, deleting folder')
         return False
+        
+    def __validate_email_address(self, email_address):
+        if len(email_address) > 100:
+            return False
+        if '@' in email_address and '.' in email_address:
+            return True
+        return False
 
     def get_new_process_id(self):
         return str(uuid.uuid4())
 
-    def add_process(self, process_id: str):
-        logger.info(f'process_id = {process_id}')
-        if self.__validate_input_file(process_id):
-            self.j_manager_thread_safe.add_process(process_id)
+    def add_process(self, process_id: str, email_address: str):
+        logger.info(f'process_id = {process_id} email_address = {email_address}')
+        if self.__validate_input_file(process_id) and self.__validate_email_address(email_address):
+            logger.info(f'validated file and email address')
+            self.j_manager_thread_safe.add_process(process_id, email_address)
             return True
         return False
         

@@ -10,11 +10,12 @@ logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE)
 
 
 class Job_State:
-    def __init__(self, folder_path: str, pbs_id: str):
+    def __init__(self, folder_path: str, pbs_id: str, email_address: str):
         self.__folder_path = folder_path
         self.state = State.Init
         self.time_added = datetime.datetime.now()
         self.pbs_id = pbs_id
+        self.email_address = email_address
 
     def set_state(self, new_state: State):
         self.state = new_state
@@ -81,9 +82,9 @@ class Job_Manager_Thread_Safe:
         process_id = self.__calc_process_id(pbs_id)
         logger.warning(f'pbs_id = {pbs_id} process_id = {process_id}')
         self.__set_process_state(process_id, State.Crashed)
-        process2add = self.__pop_from_waiting_queue()
+        process2add, email_address = self.__pop_from_waiting_queue()
         if process2add:
-            self.add_process(process2add)
+            self.add_process(process2add, email_address)
 
     def __p_Q(self, pbs_id):
         logger.warning(f'pbs_id = {pbs_id}')
@@ -94,23 +95,25 @@ class Job_Manager_Thread_Safe:
         process_id = self.__calc_process_id(pbs_id)
         logger.info(f'pbs_id = {pbs_id} process_id = {process_id}')
         self.__set_process_state(process_id, State.Finished)
-        process2add = self.__pop_from_waiting_queue()
+        process2add, email_address = self.__pop_from_waiting_queue()
         if process2add:
             logger.debug(f'adding new process after processed finished')
-            self.add_process(process2add)
+            self.add_process(process2add, email_address)
 
     def __set_process_state(self, process_id, state):
         logger.info(f'process_id = {process_id}, state = {state}')
+        email_address = None
         self.__mutex_processes_state_dict.acquire()
         if process_id in self.__processes_state_dict:
             self.__processes_state_dict[process_id].set_state(state)
+            email_address = self.__processes_state_dict[process_id].email_address
         else:
             # TODO handle
-            logger.warning(f'process_id {process_id} not in __processes_state_dict: {__processes_state_dict}')
+            logger.warning(f'process_id {process_id} not in __processes_state_dict: {self.__processes_state_dict}')
         self.__mutex_processes_state_dict.release()
-        self.__func2update_html(process_id, state)
+        self.__func2update_html(process_id, state, email_address)
 
-    def add_process(self, process_id: str):
+    def add_process(self, process_id: str, email_address):
         # don't put inside the mutex area - the funciton acquire the mutex too
         running_processes = self.__calc_num_running_processes()
         self.__mutex_processes_state_dict.acquire()
@@ -120,14 +123,14 @@ class Job_Manager_Thread_Safe:
                 file2fltr = os.path.join(process_folder_path, self.__input_file_name)
                 pbs_id, _ = self.__search_engine.kraken_search(file2fltr, None)
                 logger.debug(f'process_id = {process_id} kraken process started, pbs_id = {pbs_id}')
-                self.__processes_state_dict[process_id] = Job_State(process_folder_path, pbs_id)
+                self.__processes_state_dict[process_id] = Job_State(process_folder_path, pbs_id, email_address)
             else:
                 # TODO handle exception
                 logger.error('already in processes_state_dict')
         else:
             logger.info(f'process_id = {process_id} adding to waiting list')
             self.__mutex_processes_waiting_queue.acquire()
-            self.__waiting_list.append(process_id)
+            self.__waiting_list.append((process_id, email_address))
             self.__mutex_processes_waiting_queue.release()
             
         self.__mutex_processes_state_dict.release()
@@ -148,12 +151,12 @@ class Job_Manager_Thread_Safe:
 
     def __pop_from_waiting_queue(self):
         self.__mutex_processes_waiting_queue.acquire()
-        process2return = None
+        process_tuple2return = None, None
         if len(self.__waiting_list) > 0:
-            process2return = self.__waiting_list.pop(0)
+            process_tuple2return = self.__waiting_list.pop(0)
         self.__mutex_processes_waiting_queue.release()
-        logger.info(f'process2return = {process2return}')
-        return process2return
+        logger.info(f'process2return = {process_tuple2return}')
+        return process_tuple2return
 
     def get_job_state(self, process_id: str):
         state2return = None

@@ -117,19 +117,25 @@ def upload_file():
             flash('No selected file')
             return redirect(request.url)
         if file and allowed_file(file.filename):
-            logger.info(f'file uploaded = {file}')
+            email_address = request.form.get('email', None)
+            if email_address == None:
+                #TODO handle
+                logger.warning(f'email_address not available')
+                return render_template('home.html')
+            logger.info(f'file uploaded = {file}, email_address = {email_address}')
             filename = secure_filename(file.filename)
             new_process_id = manager.get_new_process_id()
             folder2save_file = os.path.join(app.config['UPLOAD_FOLDERS_ROOT_PATH'], new_process_id)
             os.mkdir(folder2save_file)
-            if not filename.endswith('gz'):
+            if not filename.endswith('gz'): #zipped file
                 file.save(os.path.join(folder2save_file, USER_FILE_NAME))
             else:
                 file.save(os.path.join(folder2save_file, USER_FILE_NAME + '.gz'))
             logger.info(f'file saved = {file}')
-            man_results = manager.add_process(new_process_id)
+            man_results = manager.add_process(new_process_id, email_address)
             logger.info(f'process added man_results = {man_results}, redirecting url')
             return redirect(url_for('process_state', process_id=new_process_id))
         else:
+            #TODO handle
             logger.info(f'file extention not allowed')
     return render_template('home.html')
