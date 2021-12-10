@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 from utils import State
 
 # OUTPUT consts
@@ -32,13 +33,6 @@ QstatDataColumns = [JOB_NUMBER_COL, 'username', 'queue', JOB_NAME_COL, 'session_
 SRVER_USERNAME = 'bioseq'
 JOB_RUNNING_TIME_LIMIT_IN_HOURS = 10
 
-# Job listener and management function naming
-LONG_RUNNING_JOBS_NAME = 'LongRunning'  # todo: edo put here what you want
-QUEUE_JOBS_NAME = 'Queue'  # todo: edo put here what you want
-NEW_RUNNING_JOBS_NAME = 'NewRunning'  # todo: edo put here what you want
-FINISHED_JOBS_NAME = 'Finished'  # todo: edo put here what you want
-ERROR_JOBS_NAME = 'Error'  # todo: edo put here what you want
-WEIRD_BEHAVIOR_JOB_TO_CHECK = ''  # todo: edo put here what you want
 
 # Kraken Variables
 # todo replace all paths
@@ -78,18 +72,32 @@ rm {query_path}
 '''
 
 # post processing
-
+POSTPROCESS_JOB_PREFIX = 'PP'
+POSTPROCESS_JOB_QUEUE_NAME = KRAKEN_JOB_QUEUE_NAME
+NUBMER_OF_CPUS_POSTPROCESS_JOB = NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB
 POST_PROCESS_COMMAND_TEMPLATE = '''
 #!/bin/bash          
 
-original_unclassified_data="{path_to_original_unclassified_data}"
-original_classified_data="{path_to_original_classified_data}"
-input_path="{path_to_classified_results}"
-output_path="{path_to_final_result_file}"
-output_pathTemp="Temp.txt"
-Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
-unclassified_path="{path_to_unclassified_results}"
-string='{species_to_filter_on}'
+#PBS -S /bin/bash
+#PBS -r y
+#PBS -q {queue_name}
+#PBS -l ncpus={cpu_number}
+#PBS -v PBS_O_SHELL=bash,PBS_ENVIRONMENT=PBS_BATCH
+#PBS -N {job_name}
+#PBS -e {error_files_path}
+#PBS -o {output_files_path}
+
+source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate
+
+set -u
+set original_unclassified_data="{path_to_original_unclassified_data}"
+set original_classified_data="{path_to_original_classified_data}"
+set input_path="{path_to_classified_results}"
+set output_path="{path_to_final_result_file}"
+set output_pathTemp="Temp.txt"
+set Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
+set string='{species_to_filter_on}'
 
 # filter kraken results by query name and threshold
 cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "\\"*,\\"*" 'NR!=1 {{print $2}}' > "$output_pathTemp"
@@ -103,6 +111,16 @@ cat "$Temp_new_unclassified_seqs" "$original_unclassified_data" > "$output_path"
 rm "$output_pathTemp"
 rm "$Temp_new_unclassified_seqs"
 '''
+
+# Job listener and management function naming
+LONG_RUNNING_JOBS_NAME = 'LongRunning'
+QUEUE_JOBS_NAME = 'Queue'
+NEW_RUNNING_JOBS_NAME = 'NewRunning'
+FINISHED_JOBS_NAME = 'Finished'
+ERROR_JOBS_NAME = 'Error'
+WEIRD_BEHAVIOR_JOB_TO_CHECK = ''
+# multiple job types
+PBS_JOB_PREFIXES = (KRAKEN_JOB_PREFIX, POSTPROCESS_JOB_PREFIX)
 
 class UI_CONSTS:
     static_folder_path = 'gifs/'
