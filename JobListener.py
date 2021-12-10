@@ -2,19 +2,34 @@ import re
 import subprocess
 
 import pandas as pd
-from utils import logger
-from SharedConsts import QstatDataColumns, SRVER_USERNAME, KRAKEN_JOB_PREFIX, JOB_CHANGE_COLS, JOB_ELAPSED_TIME, \
+
+from SharedConsts import QstatDataColumns, SRVER_USERNAME, JOB_CHANGE_COLS, JOB_ELAPSED_TIME, \
     JOB_RUNNING_TIME_LIMIT_IN_HOURS, JOB_NUMBER_COL, LONG_RUNNING_JOBS_NAME, QUEUE_JOBS_NAME, NEW_RUNNING_JOBS_NAME, \
-    FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, ERROR_JOBS_NAME
+    FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, ERROR_JOBS_NAME, PBS_JOB_PREFIXES
+from utils import logger
 
 
 class PbsListener:
 
-    def __init__(self, functions_to_call):
-        self.functions = functions_to_call
+    def __init__(self, job_prefix_to_function_mapping):
+        """
+        :param job_prefix_to_function_mapping: MUST be a dictionary of this structure:
+        keys are Job prefixes (that must appear in the PBS_JOB_PREFIXES Const) and the values are dictionaries.
+        the inner dictionaries MUST be of this structure:
+        keys are Job States (From the Consts) and the values are functions to call for the appropriate state and job
+        type.
+        Example (not with all job states and kinds):
+        {'KR': {'NewRunning': some_function}, 'PP':{'NewRunning': some_other_function}}
+        """
+        self.job_prefix_to_function_mapping = job_prefix_to_function_mapping
         self.previous_state = None
+        self.job_prefixes = tuple(job_prefix_to_function_mapping.keys())
 
     def run(self):
+        """
+        main running loop for the listener
+        :return: None
+        """
         # get running jobs data
         current_job_state = self.get_server_job_stats()
         # check state diff, act accordingly
@@ -43,30 +58,32 @@ class PbsListener:
         # make sure there is something to report
         if len(changed_jobs.index) == 0:
             return
-        for index, job_row in changed_jobs.iterrows():
-            job_number = job_row[JOB_NUMBER_COL]
-            job_status = job_row[JOB_STATUS_COL]
-            # case of running jobs
-            if job_status == 'R':
-                # case where job finished
-                if job_row['origin'] == 'P':
-                    logger.debug(f'job_row = {job_row} finished')
-                    self.functions[FINISHED_JOBS_NAME](job_number)
-                # case of newly running job
-                elif job_row['origin'] == 'N':
-                    logger.debug(f'job_row = {job_row} running')
-                    self.functions[NEW_RUNNING_JOBS_NAME](job_number)
+        for job_prefix in self.job_prefixes:
+            relevant_df = changed_jobs[changed_jobs['job_name'].str.startswith(job_prefix)]
+            for index, job_row in relevant_df.iterrows():
+                job_number = job_row[JOB_NUMBER_COL]
+                job_status = job_row[JOB_STATUS_COL]
+                # case of running jobs
+                if job_status == 'R':
+                    # case where job finished
+                    if job_row['origin'] == 'P':
+                        logger.debug(f'job_row = {job_row} finished')
+                        self.job_prefix_to_function_mapping[job_prefix][FINISHED_JOBS_NAME](job_number)
+                    # case of newly running job
+                    elif job_row['origin'] == 'N':
+                        logger.debug(f'job_row = {job_row} running')
+                        self.job_prefix_to_function_mapping[job_prefix][NEW_RUNNING_JOBS_NAME](job_number)
+                    else:
+                        self.job_prefix_to_function_mapping[job_prefix][WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
+                elif job_status == 'Q':
+                    logger.info(f'job_row = {job_row} queue')
+                    self.job_prefix_to_function_mapping[job_prefix][QUEUE_JOBS_NAME](job_number)
+                elif job_status == 'E':
+                    logger.warning(f'job_row = {job_row} error')
+                    self.job_prefix_to_function_mapping[job_prefix][ERROR_JOBS_NAME](job_number)
                 else:
-                    self.functions[WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
-            elif job_status == 'Q':
-                logger.info(f'job_row = {job_row} queue')
-                self.functions[QUEUE_JOBS_NAME](job_number)
-            elif job_status == 'E':
-                logger.warning(f'job_row = {job_row} error')
-                self.functions[ERROR_JOBS_NAME](job_number)
-            else:
-                logger.warning(f'job_row = {job_row} weird behavior')
-                self.functions[WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
+                    logger.warning(f'job_row = {job_row} weird behavior')
+                    self.job_prefix_to_function_mapping[job_prefix][WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
 
     def get_server_job_stats(self):
         """
@@ -79,7 +96,7 @@ class PbsListener:
         results_params = [i[:11] for i in tmp_results_params]
         results_df = pd.DataFrame(results_params, columns=QstatDataColumns)
         results_df['cpus'] = results_df['cpus'].astype(int)
-        results_df = results_df[results_df['job_name'].str.startswith(KRAKEN_JOB_PREFIX)]
+        results_df = results_df[results_df['job_name'].str.startswith(PBS_JOB_PREFIXES)]
 
         return results_df
 
@@ -116,5 +133,6 @@ class PbsListener:
         temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].apply(lambda x: int(x[0]))
         long_running_jobs = temp_new_job_state[temp_new_job_state[JOB_ELAPSED_TIME] >= JOB_RUNNING_TIME_LIMIT_IN_HOURS][
             JOB_NUMBER_COL].values
-        for long_running_job in long_running_jobs:
-            self.functions[LONG_RUNNING_JOBS_NAME](long_running_job)
+        for job_prefix in self.job_prefixes:
+            for long_running_job in long_running_jobs:
+                self.job_prefix_to_function_mapping[job_prefix][LONG_RUNNING_JOBS_NAME](long_running_job)
