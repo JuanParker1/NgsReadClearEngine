@@ -15,7 +15,7 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
     :param root_folder: path to the client root folder
     :param classification_threshold: threshold to determine "classified" results as "unclassified" results
     :param species_to_filter_on: list of species to KEEP classified
-    :return:
+    :return: the PBS job id
     """
 
     path_to_classified_results = os.path.join(root_folder, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME)
@@ -52,4 +52,4 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
     job_run_output = subprocess.run(terminal_cmd, stdout=PIPE, stderr=PIPE, shell=True)
     os.remove(temp_script_path)
 
-    return path_to_final_result_file
+    return job_run_output

@@ -31,7 +31,7 @@ JOB_CHANGE_COLS = [JOB_NUMBER_COL, JOB_NAME_COL, JOB_STATUS_COL]
 QstatDataColumns = [JOB_NUMBER_COL, 'username', 'queue', JOB_NAME_COL, 'session_id', 'nodes', 'cpus', 'req_mem',
                     'req_time', JOB_STATUS_COL, JOB_ELAPSED_TIME]
 SRVER_USERNAME = 'bioseq'
-JOB_RUNNING_TIME_LIMIT_IN_HOURS = 10
+JOB_RUNNING_TIME_LIMIT_IN_HOURS = 36
 
 
 # Kraken Variables

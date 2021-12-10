@@ -23,6 +23,7 @@ class PbsListener:
         """
         self.job_prefix_to_function_mapping = job_prefix_to_function_mapping
         self.previous_state = None
+        self.job_prefixes = tuple(job_prefix_to_function_mapping.keys())
 
     def run(self):
         """
@@ -57,7 +58,7 @@ class PbsListener:
         # make sure there is something to report
         if len(changed_jobs.index) == 0:
             return
-        for job_prefix in PBS_JOB_PREFIXES:
+        for job_prefix in self.job_prefixes:
             relevant_df = changed_jobs[changed_jobs['job_name'].str.startswith(job_prefix)]
             for index, job_row in relevant_df.iterrows():
                 job_number = job_row[JOB_NUMBER_COL]
@@ -132,6 +133,6 @@ class PbsListener:
         temp_new_job_state[JOB_ELAPSED_TIME] = temp_new_job_state[JOB_ELAPSED_TIME].apply(lambda x: int(x[0]))
         long_running_jobs = temp_new_job_state[temp_new_job_state[JOB_ELAPSED_TIME] >= JOB_RUNNING_TIME_LIMIT_IN_HOURS][
             JOB_NUMBER_COL].values
-        for job_prefix in PBS_JOB_PREFIXES:
+        for job_prefix in self.job_prefixes:
             for long_running_job in long_running_jobs:
                 self.job_prefix_to_function_mapping[job_prefix][LONG_RUNNING_JOBS_NAME](long_running_job)
