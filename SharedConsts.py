@@ -108,9 +108,28 @@ class UI_CONSTS:
     static_folder_path = 'gifs/'
     states_gifs_dict = {
         State.Running: os.path.join(static_folder_path, "loading4.gif"),
-        State.Finished: os.path.join(static_folder_path, "loading2.gif"),
+        State.Finished: os.path.join(static_folder_path, "loading2.gif"), #TODO is needed??
         State.Crashed: "crashed", #TODO finish
         State.Waiting: os.path.join(static_folder_path, "loading1.gif"),
         State.Init: os.path.join(static_folder_path, "loading3.gif"),
     }
+    
+    states_text_dict = {
+        State.Running: "Your process is running",
+        State.Finished: "Your process finished... Redirecting to results page", #TODO is needed??
+        State.Crashed: "Your process crashed\n we suggest you rerun the process.", #TODO finish
+        State.Waiting: "Your process is waiting\nWe currently run other process :(\nShortly your process will be started",
+        State.Init: "We are verifing your input, shortly your process will start",
+    }
+    
+    ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
+    allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
+
+    ALERT_USER_TEXT_UNKNOWN_PROCESS_ID = 'unknown process'
+    ALERT_USER_TEXT_INVALID_EXPORT_PARAMS = 'invalid paramters for export'
+    ALERT_USER_TEXT_POSTPROCESS_CRASH = 'can\'t postprocess'
+    ALERT_USER_TEXT_NO_FILE_UPLOADED = 'insert file'
+    ALERT_USER_TEXT_INVALID_MAIL = 'invalid mail'
+    ALERT_USER_TEXT_CANT_ADD_PROCESS = 'can\'t add search process'
+    ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED = f'invalid file extenstion, please use one of the following: {allowed_files_str}'
 
