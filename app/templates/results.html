@@ -104,7 +104,7 @@
 </body>
 
 <script> 
-
+    
     const species_container = document.getElementById("species_container");
     
     let new_index = []
@@ -293,6 +293,10 @@
         species_container.appendChild(toggle);
     })
     
+    const alert_user = '{{alert_user}}'
+    if (alert_user === 'true'){
+        alert('{{text}}')
+    }
     
 </script>
 
