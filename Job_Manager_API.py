@@ -70,10 +70,13 @@ class Job_Manager_API:
 
     def add_process(self, process_id: str, email_address: str):
         logger.info(f'process_id = {process_id} email_address = {email_address}')
-        if self.__validate_input_file(process_id) and self.__validate_email_address(email_address):
+        is_valid_file = self.__validate_input_file(process_id)
+        is_valid_email = self.__validate_email_address(email_address)
+        if is_valid_file and is_valid_email:
             logger.info(f'validated file and email address')
             self.j_manager_thread_safe.add_process(process_id, email_address)
             return True
+        logger.warning(f'process_id = {process_id}, can\'t add process: is_valid_file = {is_valid_file} is_valid_email = {is_valid_email}')
         return False
         
     def export_file(self, process_id: str, species_list:list, k_threshold:float):
@@ -83,7 +86,7 @@ class Job_Manager_API:
             if os.path.isfile(file2return):
                 return file2return
         logger.warning(f'process_id = {process_id} doen\'t have a result file')
-        return 'result file unavialiable'
+        return None
         
     def get_running_process(self):
         return self.j_manager_thread_safe.get_running_process()
@@ -96,7 +99,7 @@ class Job_Manager_API:
         if state:
             return state
         logger.warning(f'process_id = {process_id} not in j_manager_thread_safe')
-        return 'job unavialiable'
+        return None
         
     def get_UI_matrix(self, process_id):
         parent_folder = os.path.join(self.__upload_root_path, process_id)
@@ -104,4 +107,4 @@ class Job_Manager_API:
         if os.path.isfile(csv_UI_matrix):
             return pd.read_csv(csv_UI_matrix,index_col=0)
         logger.warning(f'process_id = {process_id} doen\'t have a result file')
-        return 'job unavialiable'
+        return None
