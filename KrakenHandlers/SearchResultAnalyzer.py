@@ -52,4 +52,4 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
     job_run_output = subprocess.run(terminal_cmd, stdout=PIPE, stderr=PIPE, shell=True)
     os.remove(temp_script_path)
 
-    return job_run_output
+    return job_run_output.stdout.decode('utf-8').split('.')[0]
