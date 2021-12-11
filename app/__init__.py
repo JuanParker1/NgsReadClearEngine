@@ -71,13 +71,27 @@ def allowed_file(filename):
 
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
-    job_state = manager.get_job_state(process_id)
+    job_state = manager.get_kraken_job_state(process_id)
     if job_state == None:
         return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
     if job_state != State.Finished:
         return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
     else:
         return redirect(url_for('results', process_id=process_id))
+
+@app.route('/post_process_state/<process_id>')
+def post_process_state(process_id):
+    job_state = manager.get_postprocess_job_state(process_id)
+    if job_state == None:
+        return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
+    if job_state != State.Finished:
+        return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
+    else:
+        file2send = manager.export_file(process_id)
+        if file2send == None:
+            return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed])
+        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
+        return send_file(file2send)
 
 @app.route('/admin/running')
 def running_processes():
@@ -99,12 +113,12 @@ def results(process_id):
             #TODO what about the df??
             return render_template('results.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_INVALID_EXPORT_PARAMS)
         logger.info(f'exporting, process_id = {process_id}, k_threshold = {k_threshold}, species_list = {species_list}')
-        file2send = manager.export_file(process_id, species_list, k_threshold)
-        if file2send == None:
+        man_results = manager.add_postprocess(process_id, species_list, k_threshold)
+        if man_results == None:
             #TODO what about the df??
             return render_template('results.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_POSTPROCESS_CRASH)
-        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
-        return send_file(file2send)
+        logger.info(f'process_id = {process_id}, post_process added')
+        return redirect(url_for('post_process_state', process_id=process_id))
     # results
     else:
         df = manager.get_UI_matrix(process_id)
@@ -139,7 +153,7 @@ def upload_file():
             else:
                 file.save(os.path.join(folder2save_file, USER_FILE_NAME + '.gz'))
             logger.info(f'file saved = {file}')
-            man_results = manager.add_process(new_process_id, email_address)
+            man_results = manager.add_kraken_process(new_process_id, email_address)
             if not man_results:
                 logger.warning(f'job_manager_api can\'t add process')
                 return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS)
