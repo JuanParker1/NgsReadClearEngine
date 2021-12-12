@@ -13,7 +13,6 @@ warnings.filterwarnings("ignore")
 
 UPLOAD_FOLDERS_ROOT_PATH = '/bioseq/data/results/genome_fltr/'
 USER_FILE_NAME = 'reads.fasta'
-ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
 MAX_NUMBER_PROCESS = 3
 TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC = 1200
 
@@ -68,15 +67,31 @@ manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FIL
 def allowed_file(filename):
     logger.debug(f'filename = {filename}')
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in UI_CONSTS.ALLOWED_EXTENSIONS
 
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
-    job_state = manager.get_job_state(process_id)
+    job_state = manager.get_kraken_job_state(process_id)
+    if job_state == None:
+        return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
     if job_state != State.Finished:
-        return render_template('file_download.html', process_id=process_id, state=job_state, gif=UI_CONSTS.states_gifs_dict[job_state])
+        return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
     else:
         return redirect(url_for('results', process_id=process_id))
+
+@app.route('/post_process_state/<process_id>')
+def post_process_state(process_id):
+    job_state = manager.get_postprocess_job_state(process_id)
+    if job_state == None:
+        return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
+    if job_state != State.Finished:
+        return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
+    else:
+        file2send = manager.export_file(process_id)
+        if file2send == None:
+            return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed])
+        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
+        return send_file(file2send)
 
 @app.route('/admin/running')
 def running_processes():
@@ -91,19 +106,27 @@ def results(process_id):
     # export
     if request.method == 'POST':
         data = request.form
-        species_list, k_threshold = data['species_list'].split(','), float(data['k_mer_threshold'])
+        try:
+            species_list, k_threshold = data['species_list'].split(','), float(data['k_mer_threshold'])
+        except Exception as e:
+            logger.error(f'{e}')
+            #TODO what about the df??
+            return render_template('results.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_INVALID_EXPORT_PARAMS)
         logger.info(f'exporting, process_id = {process_id}, k_threshold = {k_threshold}, species_list = {species_list}')
-        file2send = manager.export_file(process_id, species_list, k_threshold)
-        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
-        return send_file(file2send)
+        man_results = manager.add_postprocess(process_id, species_list, k_threshold)
+        if man_results == None:
+            #TODO what about the df??
+            return render_template('results.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_POSTPROCESS_CRASH)
+        logger.info(f'process_id = {process_id}, post_process added')
+        return redirect(url_for('post_process_state', process_id=process_id))
     # results
     else:
         df = manager.get_UI_matrix(process_id)
-        if isinstance(df, str):
+        if df is None:
             logger.error(f'process_id = {process_id}, df = {df}')
-            return render_template('file_download.html', process_id=process_id, state=State.Crashed, gif=UI_CONSTS.states_gifs_dict[State.Crashed])
+            return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed])
         logger.info(f'process_id = {process_id}, df = {df}')
-    return render_template('results.html', data=df.to_json())
+    return render_template('results.html', alert_user='false', text='', data=df.to_json())
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -114,14 +137,12 @@ def upload_file():
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
         if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
+            return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_NO_FILE_UPLOADED)
         if file and allowed_file(file.filename):
             email_address = request.form.get('email', None)
             if email_address == None:
-                #TODO handle
                 logger.warning(f'email_address not available')
-                return render_template('home.html')
+                return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_INVALID_MAIL)
             logger.info(f'file uploaded = {file}, email_address = {email_address}')
             filename = secure_filename(file.filename)
             new_process_id = manager.get_new_process_id()
@@ -132,10 +153,13 @@ def upload_file():
             else:
                 file.save(os.path.join(folder2save_file, USER_FILE_NAME + '.gz'))
             logger.info(f'file saved = {file}')
-            man_results = manager.add_process(new_process_id, email_address)
+            man_results = manager.add_kraken_process(new_process_id, email_address)
+            if not man_results:
+                logger.warning(f'job_manager_api can\'t add process')
+                return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS)
             logger.info(f'process added man_results = {man_results}, redirecting url')
             return redirect(url_for('process_state', process_id=new_process_id))
         else:
-            #TODO handle
             logger.info(f'file extention not allowed')
-    return render_template('home.html')
+            return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED)
+    return render_template('home.html', alert_user='false', text='')

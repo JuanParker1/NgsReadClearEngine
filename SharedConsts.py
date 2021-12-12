@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-
 from utils import State
 
 # OUTPUT consts
@@ -31,8 +30,15 @@ JOB_CHANGE_COLS = [JOB_NUMBER_COL, JOB_NAME_COL, JOB_STATUS_COL]
 QstatDataColumns = [JOB_NUMBER_COL, 'username', 'queue', JOB_NAME_COL, 'session_id', 'nodes', 'cpus', 'req_mem',
                     'req_time', JOB_STATUS_COL, JOB_ELAPSED_TIME]
 SRVER_USERNAME = 'bioseq'
-JOB_RUNNING_TIME_LIMIT_IN_HOURS = 36
+JOB_RUNNING_TIME_LIMIT_IN_HOURS = 10
 
+# Job listener and management function naming
+LONG_RUNNING_JOBS_NAME = 'LongRunning'  # todo: edo put here what you want
+QUEUE_JOBS_NAME = 'Queue'  # todo: edo put here what you want
+NEW_RUNNING_JOBS_NAME = 'NewRunning'  # todo: edo put here what you want
+FINISHED_JOBS_NAME = 'Finished'  # todo: edo put here what you want
+ERROR_JOBS_NAME = 'Error'  # todo: edo put here what you want
+WEIRD_BEHAVIOR_JOB_TO_CHECK = ''  # todo: edo put here what you want
 
 # Kraken Variables
 # todo replace all paths
@@ -44,8 +50,11 @@ KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id
 
 # Kraken Job variables
 KRAKEN_JOB_QUEUE_NAME = 'itaym'
-NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
+POSTPROCESS_JOB_QUEUE_NAME = KRAKEN_JOB_QUEUE_NAME
+NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '30'
+NUBMER_OF_CPUS_POSTPROCESS_JOB = '1'
 KRAKEN_JOB_PREFIX = 'KR'
+POSTPROCESS_JOB_PREFIX = 'PP'
 # todo: replace the conda env
 KRAKEN_JOB_TEMPLATE = '''
 #!/bin/bash
@@ -72,12 +81,9 @@ rm {query_path}
 '''
 
 # post processing
-POSTPROCESS_JOB_PREFIX = 'PP'
-POSTPROCESS_JOB_QUEUE_NAME = KRAKEN_JOB_QUEUE_NAME
-NUBMER_OF_CPUS_POSTPROCESS_JOB = NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB
+
 POST_PROCESS_COMMAND_TEMPLATE = '''
 #!/bin/bash          
-
 #PBS -S /bin/bash
 #PBS -r y
 #PBS -q {queue_name}
@@ -110,23 +116,34 @@ rm "$output_pathTemp"
 rm "$Temp_new_unclassified_seqs"
 '''
 
-# Job listener and management function naming
-LONG_RUNNING_JOBS_NAME = 'LongRunning'
-QUEUE_JOBS_NAME = 'Queue'
-NEW_RUNNING_JOBS_NAME = 'NewRunning'
-FINISHED_JOBS_NAME = 'Finished'
-ERROR_JOBS_NAME = 'Error'
-WEIRD_BEHAVIOR_JOB_TO_CHECK = ''
-# multiple job types
-PBS_JOB_PREFIXES = (KRAKEN_JOB_PREFIX, POSTPROCESS_JOB_PREFIX)
-
 class UI_CONSTS:
     static_folder_path = 'gifs/'
     states_gifs_dict = {
         State.Running: os.path.join(static_folder_path, "loading4.gif"),
-        State.Finished: os.path.join(static_folder_path, "loading2.gif"),
+        State.Finished: os.path.join(static_folder_path, "loading2.gif"), #TODO is needed??
         State.Crashed: "crashed", #TODO finish
         State.Waiting: os.path.join(static_folder_path, "loading1.gif"),
         State.Init: os.path.join(static_folder_path, "loading3.gif"),
+        State.Queue: os.path.join(static_folder_path, "loading2.gif"),
     }
+    
+    states_text_dict = {
+        State.Running: "Your process is running",
+        State.Finished: "Your process finished... Redirecting to results page", #TODO is needed??
+        State.Crashed: "Your process crashed\n we suggest you rerun the process.", #TODO finish
+        State.Waiting: "Your process is waiting\nWe currently run other process :(\nShortly your process will be started",
+        State.Init: "We are verifing your input, shortly your process will start",
+        State.Queue: "Job is queued",
+    }
+    
+    ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
+    allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
+
+    ALERT_USER_TEXT_UNKNOWN_PROCESS_ID = 'unknown process'
+    ALERT_USER_TEXT_INVALID_EXPORT_PARAMS = 'invalid paramters for export'
+    ALERT_USER_TEXT_POSTPROCESS_CRASH = 'can\'t postprocess'
+    ALERT_USER_TEXT_NO_FILE_UPLOADED = 'insert file'
+    ALERT_USER_TEXT_INVALID_MAIL = 'invalid mail'
+    ALERT_USER_TEXT_CANT_ADD_PROCESS = 'can\'t add search process'
+    ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED = f'invalid file extenstion, please use one of the following: {allowed_files_str}'
 

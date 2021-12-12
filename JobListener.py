@@ -5,7 +5,7 @@ import pandas as pd
 
 from SharedConsts import QstatDataColumns, SRVER_USERNAME, JOB_CHANGE_COLS, JOB_ELAPSED_TIME, \
     JOB_RUNNING_TIME_LIMIT_IN_HOURS, JOB_NUMBER_COL, LONG_RUNNING_JOBS_NAME, QUEUE_JOBS_NAME, NEW_RUNNING_JOBS_NAME, \
-    FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, ERROR_JOBS_NAME, PBS_JOB_PREFIXES
+    FINISHED_JOBS_NAME, JOB_STATUS_COL, WEIRD_BEHAVIOR_JOB_TO_CHECK, ERROR_JOBS_NAME
 from utils import logger
 
 
@@ -96,7 +96,7 @@ class PbsListener:
         results_params = [i[:11] for i in tmp_results_params]
         results_df = pd.DataFrame(results_params, columns=QstatDataColumns)
         results_df['cpus'] = results_df['cpus'].astype(int)
-        results_df = results_df[results_df['job_name'].str.startswith(PBS_JOB_PREFIXES)]
+        results_df = results_df[results_df['job_name'].str.startswith(self.job_prefixes)]
 
         return results_df
 
