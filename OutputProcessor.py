@@ -28,15 +28,13 @@ def parse_kmer_data(kraken_raw_output_df):
     return kraken_raw_output_df
 
 
-def get_NCBI_renaming_dict(summary_res_path):
+def get_NCBI_renaming_dict(summary_res_df):
     """
     extracts the ncbi taxonomy data from the karaken summary file
     :param summary_res_path: path to the relevant kraken
     :return:
     """
-    summary_res_df = pd.read_csv(summary_res_path, sep='\t', names=SUMMARY_RESULTS_COLUMN_NAMES)
     temp_naming_df = summary_res_df[['ncbi_taxonomyID', 'name']]
-    temp_naming_df['name'] = temp_naming_df['name'].str.strip()
     temp_naming_df['ncbi_taxonomyID'] = temp_naming_df['ncbi_taxonomyID'].astype(str)
     temp_naming_df['name'] = temp_naming_df['name'] + ' (taxid ' + temp_naming_df['ncbi_taxonomyID'] + ')'
     renaming_dict = temp_naming_df.set_index('ncbi_taxonomyID').to_dict()['name']
