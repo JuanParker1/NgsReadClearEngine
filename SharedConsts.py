@@ -93,19 +93,18 @@ POST_PROCESS_COMMAND_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
-conda activate
+source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.csh activate
 
 set original_unclassified_data="{path_to_original_unclassified_data}"
 set original_classified_data="{path_to_original_classified_data}"
 set input_path="{path_to_classified_results}"
 set output_path="{path_to_final_result_file}"
-set output_pathTemp="Temp.txt"
-set Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
+set output_pathTemp="{path_to_temp_file}"
+set Temp_new_unclassified_seqs="{path_to_temp_unclassified_file}"
 set string='{species_to_filter_on}'
 
 # filter kraken results by query name and threshold
-cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "\\"*,\\"*" 'NR!=1 {{print $2}}' > "$output_pathTemp"
+cat "$input_path" | awk -F "," '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "," 'NR!=1 {{print $2}}' > "$output_pathTemp"
 
 # filter original classified results
 cat "$original_classified_data" | seqkit grep -f "$output_pathTemp"  -o "$Temp_new_unclassified_seqs"
@@ -117,28 +116,29 @@ rm "$output_pathTemp"
 rm "$Temp_new_unclassified_seqs"
 '''
 
+
 class UI_CONSTS:
     static_folder_path = 'gifs/'
     states_gifs_dict = {
         State.Running: os.path.join(static_folder_path, "loading4.gif"),
-        State.Finished: os.path.join(static_folder_path, "loading2.gif"), #TODO is needed??
-        State.Crashed: "crashed", #TODO finish
+        State.Finished: os.path.join(static_folder_path, "loading2.gif"),  # TODO is needed??
+        State.Crashed: "crashed",  # TODO finish
         State.Waiting: os.path.join(static_folder_path, "loading1.gif"),
         State.Init: os.path.join(static_folder_path, "loading3.gif"),
         State.Queue: os.path.join(static_folder_path, "loading2.gif"),
     }
-    
+
     states_text_dict = {
         State.Running: "Your process is running",
-        State.Finished: "Your process finished... Redirecting to results page", #TODO is needed??
-        State.Crashed: "Your process crashed\n we suggest you rerun the process.", #TODO finish
+        State.Finished: "Your process finished... Redirecting to results page",  # TODO is needed??
+        State.Crashed: "Your process crashed\n we suggest you rerun the process.",  # TODO finish
         State.Waiting: "Your process is waiting\nWe currently run other process :(\nShortly your process will be started",
         State.Init: "We are verifing your input, shortly your process will start",
         State.Queue: "Job is queued",
     }
-    
+
     ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
-    allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
+    allowed_files_str = ', '.join(ALLOWED_EXTENSIONS)  # better to path string than list
 
     ALERT_USER_TEXT_UNKNOWN_PROCESS_ID = 'unknown process'
     ALERT_USER_TEXT_INVALID_EXPORT_PARAMS = 'invalid paramters for export'
