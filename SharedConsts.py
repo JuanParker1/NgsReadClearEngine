@@ -93,19 +93,18 @@ POST_PROCESS_COMMAND_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
-conda activate
+source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.csh activate
 
 set original_unclassified_data="{path_to_original_unclassified_data}"
 set original_classified_data="{path_to_original_classified_data}"
 set input_path="{path_to_classified_results}"
 set output_path="{path_to_final_result_file}"
-set output_pathTemp="Temp.txt"
-set Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
+set output_pathTemp="{path_to_temp_file}"
+set Temp_new_unclassified_seqs="{path_to_temp_unclassified_file}"
 set string='{species_to_filter_on}'
 
 # filter kraken results by query name and threshold
-cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "\\"*,\\"*" 'NR!=1 {{print $2}}' > "$output_pathTemp"
+cat "$input_path" | awk -F "," '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "," 'NR!=1 {{print $2}}' > "$output_pathTemp"
 
 # filter original classified results
 cat "$original_classified_data" | seqkit grep -f "$output_pathTemp"  -o "$Temp_new_unclassified_seqs"
