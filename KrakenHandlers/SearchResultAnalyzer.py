@@ -25,9 +25,11 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
     path_to_final_result_file = os.path.join(root_folder, FINAL_OUTPUT_FILE_NAME)
     #
     species_to_filter_on_string = str(species_to_filter_on).strip('[]').replace('\'', "")
-    job_unique_id = str(pathlib.Path(root_folder).parent.stem)
+    job_unique_id = str(pathlib.Path(root_folder).stem)
     job_name = f'{POSTPROCESS_JOB_PREFIX}_{job_unique_id}'
     job_logs_path = str(root_folder) + '/'
+    path_to_temp_file = os.path.join(str(root_folder), 'Temp.txt')
+    path_to_temp_unclassified = os.path.join(str(root_folder), 'Temp_new_unclassified_seqs.fasta')
     command_to_run = POST_PROCESS_COMMAND_TEMPLATE.format(path_to_classified_results=path_to_classified_results,
                                                           path_to_final_result_file=path_to_final_result_file,
                                                           path_to_unclassified_results=path_to_unclassified_results,
@@ -39,10 +41,12 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
                                                           cpu_number=NUBMER_OF_CPUS_POSTPROCESS_JOB,
                                                           job_name=job_name,
                                                           error_files_path=job_logs_path,
-                                                          output_files_path=job_logs_path)
+                                                          output_files_path=job_logs_path,
+                                                          path_to_temp_file=path_to_temp_file,
+                                                          path_to_temp_unclassified_file=path_to_temp_unclassified)
 
     # run post process on PBS
-    temp_script_path = pathlib.Path().resolve() / f'TempPostProcessFor_{job_unique_id}.sh'
+    temp_script_path = os.path.join(str(root_folder), f'TempPostProcessFor.sh')
 
     with open(temp_script_path, 'w+') as fp:
         fp.write(command_to_run)
@@ -50,6 +54,6 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
     logger.debug(f'{command_to_run}')
     terminal_cmd = f'/opt/pbs/bin/qsub {str(temp_script_path)}'
     job_run_output = subprocess.run(terminal_cmd, stdout=PIPE, stderr=PIPE, shell=True)
-    os.remove(temp_script_path)
+    # os.remove(temp_script_path)
 
     return job_run_output.stdout.decode('utf-8').split('.')[0]

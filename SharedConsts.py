@@ -99,8 +99,8 @@ set original_unclassified_data="{path_to_original_unclassified_data}"
 set original_classified_data="{path_to_original_classified_data}"
 set input_path="{path_to_classified_results}"
 set output_path="{path_to_final_result_file}"
-set output_pathTemp="Temp.txt"
-set Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
+set output_pathTemp="{path_to_temp_file}"
+set Temp_new_unclassified_seqs="{path_to_temp_unclassified_file}"
 set string='{species_to_filter_on}'
 
 # filter kraken results by query name and threshold
