@@ -50,7 +50,7 @@ KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id
 
 # Kraken Job variables
 KRAKEN_JOB_QUEUE_NAME = 'itaym'
-POSTPROCESS_JOB_QUEUE_NAME = 'itaym'
+POSTPROCESS_JOB_QUEUE_NAME = KRAKEN_JOB_QUEUE_NAME
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '30'
 NUBMER_OF_CPUS_POSTPROCESS_JOB = '1'
 KRAKEN_JOB_PREFIX = 'KR'
@@ -84,15 +84,26 @@ rm {query_path}
 
 POST_PROCESS_COMMAND_TEMPLATE = '''
 #!/bin/bash          
+#PBS -S /bin/bash
+#PBS -r y
+#PBS -q {queue_name}
+#PBS -l ncpus={cpu_number}
+#PBS -v PBS_O_SHELL=bash,PBS_ENVIRONMENT=PBS_BATCH
+#PBS -N {job_name}
+#PBS -e {error_files_path}
+#PBS -o {output_files_path}
 
-original_unclassified_data="{path_to_original_unclassified_data}"
-original_classified_data="{path_to_original_classified_data}"
-input_path="{path_to_classified_results}"
-output_path="{path_to_final_result_file}"
-output_pathTemp="Temp.txt"
-Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
-unclassified_path="{path_to_unclassified_results}"
-string='{species_to_filter_on}'
+source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate
+
+set -u
+set original_unclassified_data="{path_to_original_unclassified_data}"
+set original_classified_data="{path_to_original_classified_data}"
+set input_path="{path_to_classified_results}"
+set output_path="{path_to_final_result_file}"
+set output_pathTemp="Temp.txt"
+set Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
+set string='{species_to_filter_on}'
 
 # filter kraken results by query name and threshold
 cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "\\"*,\\"*" 'NR!=1 {{print $2}}' > "$output_pathTemp"
