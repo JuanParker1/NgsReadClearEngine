@@ -117,29 +117,28 @@ rm "$output_pathTemp"
 rm "$Temp_new_unclassified_seqs"
 '''
 
-
 class UI_CONSTS:
     static_folder_path = 'gifs/'
     states_gifs_dict = {
         State.Running: os.path.join(static_folder_path, "loading4.gif"),
-        State.Finished: os.path.join(static_folder_path, "loading2.gif"),  # TODO is needed??
-        State.Crashed: "crashed",  # TODO finish
+        State.Finished: os.path.join(static_folder_path, "loading2.gif"), #TODO is needed??
+        State.Crashed: "crashed", #TODO finish
         State.Waiting: os.path.join(static_folder_path, "loading1.gif"),
         State.Init: os.path.join(static_folder_path, "loading3.gif"),
         State.Queue: os.path.join(static_folder_path, "loading2.gif"),
     }
-
+    
     states_text_dict = {
         State.Running: "Your process is running",
-        State.Finished: "Your process finished... Redirecting to results page",  # TODO is needed??
-        State.Crashed: "Your process crashed\n we suggest you rerun the process.",  # TODO finish
+        State.Finished: "Your process finished... Redirecting to results page", #TODO is needed??
+        State.Crashed: "Your process crashed\n we suggest you rerun the process.", #TODO finish
         State.Waiting: "Your process is waiting\nWe currently run other process :(\nShortly your process will be started",
         State.Init: "We are verifing your input, shortly your process will start",
         State.Queue: "Job is queued",
     }
-
+    
     ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
-    allowed_files_str = ', '.join(ALLOWED_EXTENSIONS)  # better to path string than list
+    allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
 
     ALERT_USER_TEXT_UNKNOWN_PROCESS_ID = 'unknown process'
     ALERT_USER_TEXT_INVALID_EXPORT_PARAMS = 'invalid paramters for export'
