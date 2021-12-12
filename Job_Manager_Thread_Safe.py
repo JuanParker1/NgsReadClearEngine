@@ -4,19 +4,16 @@ from threading import Lock
 from apscheduler.schedulers.background import BackgroundScheduler
 from JobListener import PbsListener
 import SharedConsts as sc
-from KrakenHandlers.SearchEngine import SearchEngine
-from KrakenHandlers.SearchResultAnalyzer import run_post_process
 from utils import State, logger, LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE
 logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE)
 
-JOBS_PREFIXES_LST = [sc.KRAKEN_JOB_PREFIX, sc.POSTPROCESS_JOB_PREFIX]
 
 class Job_State:
-    def __init__(self, folder_path: str, email_address: str):
+    def __init__(self, folder_path: str, jobs_prefixes_lst: list, email_address):
         self.__folder_path = folder_path
-        self.__job_states_dict = {prefix: None for prefix in JOBS_PREFIXES_LST}
+        self.__job_states_dict = {prefix: None for prefix in jobs_prefixes_lst}
         self.__time_added = datetime.datetime.now()
-        self.__pbs_id_dict = {prefix: None for prefix in JOBS_PREFIXES_LST}
+        self.__pbs_id_dict = {prefix: None for prefix in jobs_prefixes_lst}
         self.__email_address = email_address
 
     def set_job_state(self, new_state: State, job_prefix: str):
@@ -47,27 +44,21 @@ class Job_State:
         return self.__email_address
 
 class Job_Manager_Thread_Safe:
-    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, func2update_html_kraken, func2update_html_postprocess):
+    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, function2call_processes_changes_state: dict, function2append_process: dict):
         self.max_number_of_process = max_number_of_process
         self.__upload_root_path = upload_root_path
         self.__processes_state_dict = {}
         self.__mutex_processes_state_dict = Lock()
         self.__mutex_processes_waiting_queue = Lock()
         self.__waiting_list = []
-        self.__search_engine = SearchEngine()
         self.__input_file_name = input_file_name
-        self.__func2update_html_kraken = func2update_html_kraken
-        self.__func2update_html_postprocess = func2update_html_postprocess
-        function_to_call_listener = {
-            sc.KRAKEN_JOB_PREFIX: self.__make_function_dict4listener(lambda process_id, state: self.__set_process_state(process_id, state, sc.KRAKEN_JOB_PREFIX, self.__func2update_html_kraken)),
-            sc.POSTPROCESS_JOB_PREFIX: self.__make_function_dict4listener(lambda process_id, state: self.__set_process_state(process_id, state, sc.POSTPROCESS_JOB_PREFIX, self.__func2update_html_postprocess)),
-        }
-        assert len(function_to_call_listener) == len(JOBS_PREFIXES_LST), f'verify all prefixes jobs are in function_to_call_listener'
-        self.job_prefixes_to_function_append_job = {
-            sc.KRAKEN_JOB_PREFIX: self.add_kraken_process,
-            sc.POSTPROCESS_JOB_PREFIX: self.add_postprocess,
-        }
-        assert len(self.job_prefixes_to_function_append_job) == len(JOBS_PREFIXES_LST), f'verify all prefixes jobs are in self.job_prefixes_to_function_append_job'
+        assert len(function2call_processes_changes_state) == len(function2append_process), f'verify function2call_processes_changes_state and function2append_process have all the required job_prefixes. Their len should be the same'
+        assert function2call_processes_changes_state.keys() == function2append_process.keys(), f'verify function2call_processes_changes_state and function2append_process have the same keys. It should contain the job_prefixes'
+        self.jobs_prefixes_lst = list(function2call_processes_changes_state.keys())
+        self.__function2append_process = function2append_process
+        function_to_call_listener = {}
+        for job_prefix in function2call_processes_changes_state.keys():
+            function_to_call_listener[job_prefix] = self.__make_function_dict4listener(lambda process_id, state, _job_prefix=job_prefix: self.__set_process_state(process_id, state, _job_prefix, function2call_processes_changes_state[_job_prefix]))
         # create listener on queue
         self.__listener = PbsListener(function_to_call_listener)
         self.__scheduler = BackgroundScheduler()
@@ -78,7 +69,7 @@ class Job_Manager_Thread_Safe:
         running_processes = 0
         self.__mutex_processes_state_dict.acquire()
         for process_id in self.__processes_state_dict:
-            for job_prefix in JOBS_PREFIXES_LST:
+            for job_prefix in self.jobs_prefixes_lst:
                 if self.__processes_state_dict[process_id].get_job_state(job_prefix) == State.Running:
                     running_processes += 1
         self.__mutex_processes_state_dict.release()
@@ -89,7 +80,7 @@ class Job_Manager_Thread_Safe:
         process_id2return = None
         self.__mutex_processes_state_dict.acquire()
         for process_id in self.__processes_state_dict:
-            for job_prefix in JOBS_PREFIXES_LST:
+            for job_prefix in self.jobs_prefixes_lst:
                 if clean_pbs_id == self.__processes_state_dict[process_id].get_pbs_id(job_prefix):
                     process_id2return = process_id
                     break
@@ -113,7 +104,7 @@ class Job_Manager_Thread_Safe:
         }
 
     def __set_process_state(self, process_id, state, job_prefix, func2update):
-        logger.info(f'process_id = {process_id}, state = {state}')
+        logger.info(f'process_id = {process_id}, job_prefix = {job_prefix} state = {state}')
         email_address = None
         self.__mutex_processes_state_dict.acquire()
         if process_id in self.__processes_state_dict:
@@ -133,59 +124,32 @@ class Job_Manager_Thread_Safe:
         process2add, job_type, running_arguments = self.__pop_from_waiting_queue()
         if process2add:
             logger.debug(f'adding new process after processed finished process2add = {process2add} job_type = {job_type}')
-            if job_type in self.job_prefixes_to_function_append_job:
-                logger.debug(f'calling function to: {self.job_prefixes_to_function_append_job[job_type]}({process2add}, {running_arguments})')
-                self.job_prefixes_to_function_append_job[job_type](process2add, *running_arguments)
-            else:
-                logger.error(f'job_type = {job_type} unregocnized in {self.job_prefixes_to_function_append_job}')
+            self.add_job(process2add, job_type, *running_arguments)
 
-    def add_kraken_process(self, process_id: str, email_address):
-        logger.info(f'process_id = {process_id}, email_address = {email_address}')
+    def add_process(self, process_id: str, job_prefix, *args):
+        logger.info(f'process_id = {process_id}, job_prefix = {job_prefix}, args = {args}')
         # don't put inside the mutex area - the funciton acquire the mutex too
         running_processes = self.__calc_num_running_processes()
         self.__mutex_processes_state_dict.acquire()
         if running_processes < self.max_number_of_process:
+            process_folder_path = os.path.join(self.__upload_root_path, process_id)
             if process_id not in self.__processes_state_dict:
-                process_folder_path = os.path.join(self.__upload_root_path, process_id)
-                file2fltr = os.path.join(process_folder_path, self.__input_file_name)
-                pbs_id, _ = self.__search_engine.kraken_search(file2fltr, None)
-                logger.debug(f'process_id = {process_id} kraken process started, pbs_id = {pbs_id}')
-                self.__processes_state_dict[process_id] = Job_State(process_folder_path, email_address)
-                self.__processes_state_dict[process_id].set_job_state(State.Init, sc.KRAKEN_JOB_PREFIX)
-                self.__processes_state_dict[process_id].set_pbs_id(pbs_id, sc.KRAKEN_JOB_PREFIX)
-            else:
-                # TODO handle exception
-                logger.error('already in processes_state_dict')
+                email_address = args[0]
+                self.__processes_state_dict[process_id] = Job_State(process_folder_path, self.__function2append_process.keys(), email_address)
+            
+            pbs_id = self.__function2append_process[job_prefix](process_folder_path, *args)
+            logger.debug(f'process_id = {process_id} job_prefix = {job_prefix} pbs_id = {pbs_id}, process has started')
+            self.__processes_state_dict[process_id].set_job_state(State.Init, job_prefix)
+            self.__processes_state_dict[process_id].set_pbs_id(pbs_id, job_prefix)
+
         else:
-            logger.info(f'process_id = {process_id} adding to waiting list')
+            logger.info(f'process_id = {process_id} job_prefix = {job_prefix}, adding to waiting list')
             self.__mutex_processes_waiting_queue.acquire()
-            self.__waiting_list.append((process_id, sc.KRAKEN_JOB_PREFIX, [email_address]))
+            self.__waiting_list.append((process_id, job_prefix, args))
             self.__mutex_processes_waiting_queue.release()
             
         self.__mutex_processes_state_dict.release()
     
-    def add_postprocess(self, process_id: str, k_threshold, species_list):
-        logger.info(f'process_id = {process_id}, k_threshold = {k_threshold}, species_list = {species_list}')
-        # don't put inside the mutex area - the funciton acquire the mutex too
-        running_processes = self.__calc_num_running_processes()
-        self.__mutex_processes_state_dict.acquire()
-        if running_processes < self.max_number_of_process:
-            if process_id in self.__processes_state_dict:
-                parent_folder = os.path.join(self.__upload_root_path, process_id)
-                pbs_id = run_post_process(parent_folder, k_threshold, species_list)
-                logger.debug(f'process_id = {process_id} postprocess process started, pbs_id = {pbs_id}')
-                self.__processes_state_dict[process_id].set_job_state(State.Init, sc.POSTPROCESS_JOB_PREFIX)
-                self.__processes_state_dict[process_id].set_pbs_id(pbs_id, sc.POSTPROCESS_JOB_PREFIX)
-            else:
-                # TODO handle exception
-                logger.error(f'trying to add postprocess when process_id = {process_id} not in self.__processes_state_dict')
-        else:
-            logger.info(f'process_id = {process_id} adding to waiting list')
-            self.__mutex_processes_waiting_queue.acquire()
-            self.__waiting_list.append((process_id, sc.POSTPROCESS_JOB_PREFIX, (k_threshold, species_list)))
-            self.__mutex_processes_waiting_queue.release()
-            
-        self.__mutex_processes_state_dict.release()
 
     def get_running_process(self):
         self.__mutex_processes_state_dict.acquire()
@@ -214,11 +178,12 @@ class Job_Manager_Thread_Safe:
         state2return = None
         if process_id in self.__processes_state_dict:
             state2return = self.__processes_state_dict[process_id].get_job_state(job_prefix)
-        self.__mutex_processes_waiting_queue.acquire()
-        for process_tuple in self.__waiting_list:
-            if process_id in process_tuple:
-                state2return = State.Waiting
-                break
-        self.__mutex_processes_waiting_queue.release()
-        logger.info(f'state2return = {state2return}')
+        else:
+            self.__mutex_processes_waiting_queue.acquire()
+            for process_tuple in self.__waiting_list:
+                if process_id in process_tuple:
+                    state2return = State.Waiting
+                    break
+            self.__mutex_processes_waiting_queue.release()
+        logger.info(f'state2return = {state2return} job_prefix = {job_prefix}')
         return state2return
