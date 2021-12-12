@@ -28,12 +28,13 @@ def parse_kmer_data(kraken_raw_output_df):
     return kraken_raw_output_df
 
 
-def get_NCBI_renaming_dict(summary_res_df):
+def get_NCBI_renaming_dict(summary_res_path):
     """
-    extracts the ncbi taxonomy data from the kraken summary file
-    :param summary_res_df: the summary res data frame
+    extracts the ncbi taxonomy data from the karaken summary file
+    :param summary_res_path: path to the relevant kraken
     :return:
     """
+    summary_res_df = pd.read_csv(summary_res_path, sep='\t', names=SUMMARY_RESULTS_COLUMN_NAMES)
     temp_naming_df = summary_res_df[['ncbi_taxonomyID', 'name']]
     temp_naming_df['name'] = temp_naming_df['name'].str.strip()
     temp_naming_df['ncbi_taxonomyID'] = temp_naming_df['ncbi_taxonomyID'].astype(str)
@@ -97,6 +98,7 @@ def process_output(**kwargs):
 
     # prepare renaming dict
     summary_res_df = pd.read_csv(results_summary_path, sep='\t', names=SUMMARY_RESULTS_COLUMN_NAMES)
+    summary_res_df['name'] = summary_res_df['name'].str.strip()
     ncbi_renaming_dict = get_NCBI_renaming_dict(summary_res_df)
     # todo: export as json with the three relevant summary statistics
 
