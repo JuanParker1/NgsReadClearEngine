@@ -96,7 +96,6 @@ POST_PROCESS_COMMAND_TEMPLATE = '''
 source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
 conda activate
 
-set -u
 set original_unclassified_data="{path_to_original_unclassified_data}"
 set original_classified_data="{path_to_original_classified_data}"
 set input_path="{path_to_classified_results}"

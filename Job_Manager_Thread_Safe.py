@@ -124,7 +124,7 @@ class Job_Manager_Thread_Safe:
         process2add, job_type, running_arguments = self.__pop_from_waiting_queue()
         if process2add:
             logger.debug(f'adding new process after processed finished process2add = {process2add} job_type = {job_type}')
-            self.add_job(process2add, job_type, *running_arguments)
+            self.add_process(process2add, job_type, *running_arguments)
 
     def add_process(self, process_id: str, job_prefix, *args):
         logger.info(f'process_id = {process_id}, job_prefix = {job_prefix}, args = {args}')
@@ -137,10 +137,13 @@ class Job_Manager_Thread_Safe:
                 email_address = args[0]
                 self.__processes_state_dict[process_id] = Job_State(process_folder_path, self.__function2append_process.keys(), email_address)
             
-            pbs_id = self.__function2append_process[job_prefix](process_folder_path, *args)
-            logger.debug(f'process_id = {process_id} job_prefix = {job_prefix} pbs_id = {pbs_id}, process has started')
-            self.__processes_state_dict[process_id].set_job_state(State.Init, job_prefix)
-            self.__processes_state_dict[process_id].set_pbs_id(pbs_id, job_prefix)
+            try:
+                pbs_id = self.__function2append_process[job_prefix](process_folder_path, *args)
+                logger.debug(f'process_id = {process_id} job_prefix = {job_prefix} pbs_id = {pbs_id}, process has started')
+                self.__processes_state_dict[process_id].set_job_state(State.Init, job_prefix)
+                self.__processes_state_dict[process_id].set_pbs_id(pbs_id, job_prefix)
+            except Exception as e:
+                logger.error(e)
 
         else:
             logger.info(f'process_id = {process_id} job_prefix = {job_prefix}, adding to waiting list')

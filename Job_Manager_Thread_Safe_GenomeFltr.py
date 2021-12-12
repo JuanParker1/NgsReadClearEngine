@@ -30,7 +30,7 @@ class Job_Manager_Thread_Safe_GenomeFltr:
     
     def __postprocess_process(self, process_folder_path: str, k_threshold, species_list):
         logger.info(f'process_folder_path = {process_folder_path}')
-        pbs_id = run_post_process(parent_folder, k_threshold, species_list)
+        pbs_id = run_post_process(process_folder_path, k_threshold, species_list)
         return pbs_id
 
     def get_running_process(self):
@@ -43,7 +43,7 @@ class Job_Manager_Thread_Safe_GenomeFltr:
         logger.info(f'process_id = {process_id}')
         self.__job_manager.add_process(process_id, sc.KRAKEN_JOB_PREFIX, email_address)
 
-    def add_postprocess(self, process_id: str, email_address):
+    def add_postprocess(self, process_id: str, k_threshold, species_list):
         logger.info(f'process_id = {process_id}')
         self.__job_manager.add_process(process_id, sc.POSTPROCESS_JOB_PREFIX, k_threshold, species_list)
 
