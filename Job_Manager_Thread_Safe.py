@@ -44,7 +44,7 @@ class Job_State:
         return self.__email_address
 
 class Job_Manager_Thread_Safe:
-    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, function2call_processes_changes_state: dict, function2append_process: dict):
+    def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, function2call_processes_changes_state: dict, function2append_process: dict, paths2verify_process_ends: dict):
         self.max_number_of_process = max_number_of_process
         self.__upload_root_path = upload_root_path
         self.__processes_state_dict = {}
@@ -52,10 +52,11 @@ class Job_Manager_Thread_Safe:
         self.__mutex_processes_waiting_queue = Lock()
         self.__waiting_list = []
         self.__input_file_name = input_file_name
-        assert len(function2call_processes_changes_state) == len(function2append_process), f'verify function2call_processes_changes_state and function2append_process have all the required job_prefixes. Their len should be the same'
-        assert function2call_processes_changes_state.keys() == function2append_process.keys(), f'verify function2call_processes_changes_state and function2append_process have the same keys. It should contain the job_prefixes'
+        assert len(function2call_processes_changes_state) == len(function2append_process) == len(paths2verify_process_ends), f'verify function2call_processes_changes_state, function2append_process and paths2verify_process_ends have all the required job_prefixes. Their len should be the same'
+        assert function2call_processes_changes_state.keys() == function2append_process.keys() == paths2verify_process_ends.keys(), f'verify function2call_processes_changes_state, function2append_process and paths2verify_process_ends have the same keys. It should contain the job_prefixes'
         self.jobs_prefixes_lst = list(function2call_processes_changes_state.keys())
         self.__function2append_process = function2append_process
+        self.__paths2verify_process_ends = paths2verify_process_ends
         function_to_call_listener = {}
         for job_prefix in function2call_processes_changes_state.keys():
             function_to_call_listener[job_prefix] = self.__make_function_dict4listener(lambda process_id, state, _job_prefix=job_prefix: self.__set_process_state(process_id, state, _job_prefix, function2call_processes_changes_state[_job_prefix]))
@@ -106,6 +107,15 @@ class Job_Manager_Thread_Safe:
     def __set_process_state(self, process_id, state, job_prefix, func2update):
         logger.info(f'process_id = {process_id}, job_prefix = {job_prefix} state = {state}')
         email_address = None
+        
+        if (state == State.Finished or state == State.Crashed) and process_id in self.__processes_state_dict:
+            file2check = self.__paths2verify_process_ends[job_prefix](process_id)
+            if file2check != '': # if file2check is '' don't change the state
+                if os.path.isfile(file2check):
+                    state = State.Finished
+                else:
+                    state = State.Crashed
+        
         self.__mutex_processes_state_dict.acquire()
         if process_id in self.__processes_state_dict:
             self.__processes_state_dict[process_id].set_job_state(state, job_prefix)
