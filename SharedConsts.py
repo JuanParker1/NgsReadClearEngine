@@ -23,7 +23,8 @@ RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'max_specie', 'classifi
                            'all_classified_K_mers', 'split']
 SUMMARY_RESULTS_COLUMN_NAMES = ['percentage_of_reads', 'number_of_reads_under', 'number_of_reads_exact', 'rank_code',
                                 'ncbi_taxonomyID', 'name']
-UNCLASSIFIED_COLUMN_NAME = 'unclassified (taxid 0)'
+UNCLASSIFIED_COLUMN_NAME = 'Non Bacterial'
+KRAKEN_UNCLASSIFIED_COLUMN_NAME = 'unclassified (taxid 0)'
 
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'
