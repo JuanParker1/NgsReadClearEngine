@@ -11,7 +11,11 @@ TEMP_CLASSIFIED_IDS = Path('TempClassifiedIds.txt')
 TEMP_UNCLASSIFIED_IDS = Path('TempUnClassifiedIds.txt')
 INPUT_CLASSIFIED_FILE_NAME = Path('classified.fasta')
 INPUT_UNCLASSIFIED_FILE_NAME = Path('unclassified.fasta')
-FINAL_OUTPUT_FILE_NAME = Path('FilteredResults.fasta')
+FINAL_OUTPUT_FILE_NAME = Path('FilteredResults.gz')
+KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME = Path('summary_stat_UI.json')
+RANK_KRAKEN_TRANSLATIONS = {'U': 'Unclassified', 'R': 'Root', 'D': 'Domain', 'K': 'Kingdom', 'P': 'Phylum',
+                            'C': 'Class', 'O': 'Order', 'F': 'Family', 'G': 'Genus', 'S': 'Species'}
+
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
     "/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")  # todo: replace this with real path
 DF_LOADER_CHUCK_SIZE = 1e6
@@ -105,7 +109,7 @@ Temp_new_unclassified_seqs="{path_to_temp_unclassified_file}"
 string='{species_to_filter_on}'
 
 # filter kraken results by query name and threshold
-cat "$input_path" | awk -F "," '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "," 'NR!=1 {{print $2}}' > "$output_pathTemp"
+cat "$input_path" | awk -F "," '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($6 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "," 'NR!=1 {{print $2}}' > "$output_pathTemp"
 
 # filter original classified results
 cat "$original_classified_data" | seqkit grep -f "$output_pathTemp"  -o "$Temp_new_unclassified_seqs"
@@ -113,6 +117,9 @@ cat "$original_classified_data" | seqkit grep -f "$output_pathTemp"  -o "$Temp_n
 # combine original unfiltered input with newly unclassified results
 cat "$Temp_new_unclassified_seqs" "$original_unclassified_data" > "$output_path"
 
+gzip "$output_path"
+
+rm "$output_path"
 rm "$output_pathTemp"
 rm "$Temp_new_unclassified_seqs"
 '''
