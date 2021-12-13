@@ -7,8 +7,8 @@ import pandas as pd
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME, \
     DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, \
     UNCLASSIFIED_COLUMN_NAME, RESULTS_SUMMARY_FILE_NAME, SUMMARY_RESULTS_COLUMN_NAMES, TEMP_CLASSIFIED_IDS, \
-    TEMP_UNCLASSIFIED_IDS
-
+    TEMP_UNCLASSIFIED_IDS, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME
+import json
 
 def parse_kmer_data(kraken_raw_output_df):
     """
@@ -73,15 +73,16 @@ def process_output(**kwargs):
     if outputFilePath is None:
         raise Exception("no output file path was provided for pre-processor")
 
-    processed_for_UI_results_path = outputFilePath.parent / K_MER_COUNTER_MATRIX_FILE_NAME
+    root_folder = outputFilePath.parent
+    processed_for_UI_results_path = root_folder / K_MER_COUNTER_MATRIX_FILE_NAME
     processed_Unclassified_for_PostProcess_results_path = \
-        outputFilePath.parent / RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME
+        root_folder / RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME
     processed_Classified_for_PostProcess_results_path = \
-        outputFilePath.parent / RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME
-    results_summary_path = outputFilePath.parent / RESULTS_SUMMARY_FILE_NAME
-    temp_unclass_path = outputFilePath.parent / TEMP_UNCLASSIFIED_IDS
-    temp_class_path = outputFilePath.parent / TEMP_CLASSIFIED_IDS
-
+        root_folder / RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME
+    results_summary_path = root_folder / RESULTS_SUMMARY_FILE_NAME
+    temp_unclass_path = root_folder / TEMP_UNCLASSIFIED_IDS
+    temp_class_path = root_folder / TEMP_CLASSIFIED_IDS
+    kraken_summary_results_For_UI_path = root_folder / KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME
     first = True
     how_many_unclassified = 0
     # used later to prepare the files for faster post process
@@ -98,7 +99,19 @@ def process_output(**kwargs):
     summary_res_df = pd.read_csv(results_summary_path, sep='\t', names=SUMMARY_RESULTS_COLUMN_NAMES)
     summary_res_df['name'] = summary_res_df['name'].str.strip()
     ncbi_renaming_dict = get_NCBI_renaming_dict(summary_res_df)
-    # todo: export as json with the three relevant summary statistics
+
+    # create summary statistics json for UI
+    summary_res_df['rank_code'] = summary_res_df['rank_code'].str.rstrip('1234567890')
+    percent_of_contamination = round(100 - summary_res_df[summary_res_df[
+                                                              'rank_code'] == 'U']['percentage_of_reads'].iloc[0], 2)
+    summary_res_for_UI_df = summary_res_df[summary_res_df['rank_code'] == 'C'].sort_values('percentage_of_reads',
+                                                                                             ascending=False)
+    most_common_class = summary_res_for_UI_df.head(1)['name'].iloc[0]
+    number_of_classs = len(summary_res_for_UI_df.index)
+    summary_res_for_UI_dict = {'percent_of_contamination': percent_of_contamination, 'most_common_class_contamination':
+        most_common_class, 'number_of_classes': number_of_classs}
+    with open(kraken_summary_results_For_UI_path, 'w') as jsp:
+        json.dump(summary_res_for_UI_dict, jsp)
 
     # main processing loop
     for chunk in pd.read_csv(outputFilePath, sep='\t', header=None, chunksize=DF_LOADER_CHUCK_SIZE):

@@ -22,7 +22,9 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
     path_to_unclassified_results = os.path.join(root_folder, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME)
     path_to_original_unclassified_data = os.path.join(root_folder, INPUT_UNCLASSIFIED_FILE_NAME)
     path_to_original_classified_data = os.path.join(root_folder, INPUT_CLASSIFIED_FILE_NAME)
-    path_to_final_result_file = os.path.join(root_folder, FINAL_OUTPUT_FILE_NAME)
+    pre, ext = os.path.splitext(str(FINAL_OUTPUT_FILE_NAME))
+    fasta_output_file = pre + '.txt'
+    path_to_final_result_file = os.path.join(root_folder, fasta_output_file)
     #
     species_to_filter_on_string = str(species_to_filter_on).strip('[]').replace('\'', "")
     job_unique_id = str(pathlib.Path(root_folder).stem)
