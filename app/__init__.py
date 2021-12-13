@@ -127,13 +127,12 @@ def results(process_id):
         logger.info(f'process_id = {process_id}, post_process added')
         return redirect(url_for('post_process_state', process_id=process_id))
     # results
-    else:
-        df = manager.get_UI_matrix(process_id)
-        if df is None:
-            logger.error(f'process_id = {process_id}, df = {df}')
-            return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed])
-        logger.info(f'process_id = {process_id}, df = {df}')
-    return render_template('results.html', alert_user='false', text='', data=df.to_json())
+    df, summary_json = manager.get_UI_matrix(process_id)
+    if df is None:
+        logger.error(f'process_id = {process_id}, df = {df}')
+        return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed], summary_stats=summary_json)
+    logger.info(f'process_id = {process_id}, df = {df}')
+    return render_template('results.html', alert_user='false', text='', data=df.to_json(), summary_stats=summary_json)
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
