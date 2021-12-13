@@ -32,6 +32,19 @@ class Job_Manager_Thread_Safe_GenomeFltr:
         logger.info(f'process_folder_path = {process_folder_path}')
         pbs_id = run_post_process(process_folder_path, k_threshold, species_list)
         return pbs_id
+        
+    def __get_state(self, process_id, job_prefix):
+        state = self.__job_manager.get_job_state(process_id, job_prefix)
+        if state:
+            return state
+        logger.warning(f'process_id = {process_id}, job_prefix = {job_prefix} not in __job_manager')
+        return None
+        
+    def get_kraken_job_state(self, process_id):
+        return self.__get_state(process_id, sc.KRAKEN_JOB_PREFIX)
+        
+    def get_postprocess_job_state(self, process_id):
+        return self.__get_state(process_id, sc.POSTPROCESS_JOB_PREFIX)
 
     def get_running_process(self):
         return self.__job_manager.get_running_process()

@@ -147,4 +147,5 @@ class UI_CONSTS:
     ALERT_USER_TEXT_INVALID_MAIL = 'invalid mail'
     ALERT_USER_TEXT_CANT_ADD_PROCESS = 'can\'t add search process'
     ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED = f'invalid file extenstion, please use one of the following: {allowed_files_str}'
+    ALERT_USER_TEXT_EXPORT_FILE_UNAVAILABLE = f'failed to export file, try to rerun the file'
 
