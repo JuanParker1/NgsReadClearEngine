@@ -81,9 +81,7 @@ def process_state(process_id):
 
 @app.route('/download_file/<process_id>', methods=['GET', 'POST'])
 def download_file(process_id):
-    logger.info(f'request.method == {request.method}')
     if request.method == 'POST':
-        logger.info(f'request.method == POST')
         file2send = manager.export_file(process_id)
         if file2send == None:
             logger.warning(f'failed to export file exporting, process_id = {process_id}, file2send = {file2send}')
