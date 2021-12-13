@@ -15,7 +15,7 @@ FINAL_OUTPUT_FILE_NAME = Path('FilteredResults.fasta')
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
     "/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")  # todo: replace this with real path
 DF_LOADER_CHUCK_SIZE = 1e6
-RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'classified_species', 'read_length', 'max_k_mer_p',
+RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'max_specie', 'classified_species', 'read_length', 'max_k_mer_p',
                            'all_classified_K_mers', 'split']
 SUMMARY_RESULTS_COLUMN_NAMES = ['percentage_of_reads', 'number_of_reads_under', 'number_of_reads_exact', 'rank_code',
                                 'ncbi_taxonomyID', 'name']
@@ -50,7 +50,7 @@ KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id
 
 # Kraken Job variables
 KRAKEN_JOB_QUEUE_NAME = 'itaym'
-POSTPROCESS_JOB_QUEUE_NAME = 'itaym'
+POSTPROCESS_JOB_QUEUE_NAME = KRAKEN_JOB_QUEUE_NAME
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '30'
 NUBMER_OF_CPUS_POSTPROCESS_JOB = '1'
 KRAKEN_JOB_PREFIX = 'KR'
@@ -84,18 +84,28 @@ rm {query_path}
 
 POST_PROCESS_COMMAND_TEMPLATE = '''
 #!/bin/bash          
+#PBS -S /bin/bash
+#PBS -r y
+#PBS -q {queue_name}
+#PBS -l ncpus={cpu_number}
+#PBS -v PBS_O_SHELL=bash,PBS_ENVIRONMENT=PBS_BATCH
+#PBS -N {job_name}
+#PBS -e {error_files_path}
+#PBS -o {output_files_path}
+
+source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate
 
 original_unclassified_data="{path_to_original_unclassified_data}"
 original_classified_data="{path_to_original_classified_data}"
 input_path="{path_to_classified_results}"
 output_path="{path_to_final_result_file}"
-output_pathTemp="Temp.txt"
-Temp_new_unclassified_seqs="Temp_new_unclassified_seqs.fasta"
-unclassified_path="{path_to_unclassified_results}"
+output_pathTemp="{path_to_temp_file}"
+Temp_new_unclassified_seqs="{path_to_temp_unclassified_file}"
 string='{species_to_filter_on}'
 
 # filter kraken results by query name and threshold
-cat "$input_path" | awk -F "\\"*,\\"*" '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "\\"*,\\"*" 'NR!=1 {{print $2}}' > "$output_pathTemp"
+cat "$input_path" | awk -F "," '{{split(var,parts,","); for (i in parts) dict[parts[i]]; if ($5 <= {classification_threshold} || !($3 in dict)) print }}' var="${{string}}" | awk -F "," 'NR!=1 {{print $2}}' > "$output_pathTemp"
 
 # filter original classified results
 cat "$original_classified_data" | seqkit grep -f "$output_pathTemp"  -o "$Temp_new_unclassified_seqs"
@@ -137,4 +147,5 @@ class UI_CONSTS:
     ALERT_USER_TEXT_INVALID_MAIL = 'invalid mail'
     ALERT_USER_TEXT_CANT_ADD_PROCESS = 'can\'t add search process'
     ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED = f'invalid file extenstion, please use one of the following: {allowed_files_str}'
+    ALERT_USER_TEXT_EXPORT_FILE_UNAVAILABLE = f'failed to export file, try to rerun the file'
 

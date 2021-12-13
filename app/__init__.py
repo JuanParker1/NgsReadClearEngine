@@ -79,6 +79,19 @@ def process_state(process_id):
     else:
         return redirect(url_for('results', process_id=process_id))
 
+@app.route('/download_file/<process_id>', methods=['GET', 'POST'])
+def download_file(process_id):
+    logger.info(f'request.method == {request.method}')
+    if request.method == 'POST':
+        logger.info(f'request.method == POST')
+        file2send = manager.export_file(process_id)
+        if file2send == None:
+            logger.warning(f'failed to export file exporting, process_id = {process_id}, file2send = {file2send}')
+            return render_template('export_file.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_EXPORT_FILE_UNAVAILABLE)
+        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
+        return send_file(file2send)
+    return render_template('export_file.html', alert_user='false', text='')
+
 @app.route('/post_process_state/<process_id>')
 def post_process_state(process_id):
     job_state = manager.get_postprocess_job_state(process_id)
@@ -87,11 +100,7 @@ def post_process_state(process_id):
     if job_state != State.Finished:
         return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
     else:
-        file2send = manager.export_file(process_id)
-        if file2send == None:
-            return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed])
-        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
-        return send_file(file2send)
+        return redirect(url_for('download_file', process_id=process_id))
 
 @app.route('/admin/running')
 def running_processes():
