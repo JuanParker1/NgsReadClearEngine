@@ -7,8 +7,10 @@ import pandas as pd
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME, \
     DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, \
     UNCLASSIFIED_COLUMN_NAME, RESULTS_SUMMARY_FILE_NAME, SUMMARY_RESULTS_COLUMN_NAMES, TEMP_CLASSIFIED_IDS, \
-    TEMP_UNCLASSIFIED_IDS, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME
+    TEMP_UNCLASSIFIED_IDS, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, KRAKEN_UNCLASSIFIED_COLUMN_NAME
 import json
+import re
+
 
 def parse_kmer_data(kraken_raw_output_df):
     """
@@ -98,6 +100,8 @@ def process_output(**kwargs):
     # prepare renaming dict
     summary_res_df = pd.read_csv(results_summary_path, sep='\t', names=SUMMARY_RESULTS_COLUMN_NAMES)
     summary_res_df['name'] = summary_res_df['name'].str.strip()
+    high_level_k_mers = summary_res_df[summary_res_df['rank_code'].isin(['R', 'K', 'D', 'P'])]['ncbi_taxonomyID'].values
+    regex_exp_for_high_class = re.compile('[^0-9]' + '(' + '|'.join(high_level_k_mers.astype(str)) + ')' + ':[0-9]+')
     ncbi_renaming_dict = get_NCBI_renaming_dict(summary_res_df)
 
     # create summary statistics json for UI
@@ -106,10 +110,15 @@ def process_output(**kwargs):
                                                               'rank_code'] == 'U']['percentage_of_reads'].iloc[0], 2)
     summary_res_for_UI_df = summary_res_df[summary_res_df['rank_code'] == 'C'].sort_values('percentage_of_reads',
                                                                                              ascending=False)
-    most_common_class = summary_res_for_UI_df.head(1)['name'].iloc[0]
-    number_of_classs = len(summary_res_for_UI_df.index)
+    # no classified results
+    if len(summary_res_for_UI_df.index) == 0:
+        most_common_class = 'None'
+        number_of_classes = 0
+    else:
+        most_common_class = summary_res_for_UI_df.head(1)['name'].iloc[0]
+        number_of_classes = len(summary_res_for_UI_df.index)
     summary_res_for_UI_dict = {'percent_of_contamination': percent_of_contamination, 'most_common_class_contamination':
-        most_common_class, 'number_of_classes': number_of_classs}
+        most_common_class, 'number_of_classes': number_of_classes}
     with open(kraken_summary_results_For_UI_path, 'w') as jsp:
         json.dump(summary_res_for_UI_dict, jsp)
 
@@ -119,6 +128,12 @@ def process_output(**kwargs):
         # process the results
         chunk.rename(columns={0: 'is_classified', 1: "read_name", 2: "classified_species", 3: "read_length",
                               4: "all_classified_K_mers"}, inplace=True)
+        # remove high order k-mers
+        chunk['to_remove'] = ' '
+        chunk['all_classified_K_mers'] = chunk['to_remove'].str.cat(chunk['all_classified_K_mers'])
+        chunk.drop(columns='to_remove', inplace=True)
+        chunk['all_classified_K_mers'] = chunk['all_classified_K_mers'].str.replace(regex_exp_for_high_class, '')
+
         # calculations
         chunk = parse_kmer_data(chunk)
         chunk = calc_kmer_statistics(chunk)
@@ -130,7 +145,7 @@ def process_output(**kwargs):
 
         # separate unclassified and classified results
         # fix kraken discrepancy with us
-        kraken_mistakes = chunk[(chunk['is_classified'] == 'C') & (chunk['max_specie'] == UNCLASSIFIED_COLUMN_NAME)]
+        kraken_mistakes = chunk[(chunk['is_classified'] == 'C') & (chunk['max_specie'] == KRAKEN_UNCLASSIFIED_COLUMN_NAME)]
         chunk.drop(kraken_mistakes.index, inplace=True)
         # actually separate
         unclassified_chunk = chunk[chunk['is_classified'] == 'U'].append(kraken_mistakes)
