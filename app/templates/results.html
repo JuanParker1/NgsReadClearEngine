@@ -84,20 +84,58 @@
 <body class="font-sans">
   <div class='w-full h-screen bg-no-repeat bg-cover bg-white' >
 
-    <div class="flex flex-row items-center justify-evenly mx-auto  h-full">
+    <div class="flex flex-col items-center justify-evenly mx-auto  h-full">
+        <div>
+            <h1 class="text-8xl my-4">Sum stat placeholder</h1>
+        </div>
         <div  class="flex flex-row items-center" >
-            <div id="species_container" class="flex flex-col"></div>
-            <div >
+            <div class="border-2 mx-2" >
                 <canvas style="height: 480px; width: 640px" id="bar_chart" ></canvas>
             </div>
-            <div>
-                <canvas style="height: 480px; width: 640px" id="pie_chart"> </canvas>
+            <div class="flex flex-col justify-between border-2 mx-2 px-2 py-2"   style="height: 480px;">
+                <label class="
+                px-2
+                py-4
+                text-center
+                bg-white
+                rounded-md
+                shadow-md
+                tracking-wide
+                border-2 border-blue cursor-pointer
+                hover:bg-green-600 hover:text-white
+                ease-linear
+                transition-all
+                duration-150
+                mx-3"
+                onclick="toggle_unclassified()">toggle unclassified</label  >
+        
+                <div id="species_container" class="flex flex-col overflow-auto mx-3 border-2" style="height: 300px;"></div>
+            </div>
+            <div class="border-2 mx-2" >
+                <canvas style="height: 480px; width: 480px" id="pie_chart"> </canvas>
             </div>
         </div>
-        <form id="export_btn" action="" method=post>
+
+        <form class="my-4" id="export_btn" action="" method=post>
             <input type="hidden" id="k_mer_threshold" name="k_mer_threshold" value="">
             <input type="hidden" id="species_list" name="species_list" value="">
-            <input type="submit" value="Export">
+            <label class="
+                w-64
+                px-2
+                py-4
+                text-center
+                bg-white
+                rounded-md
+                shadow-md
+                tracking-wide
+                border-2 border-blue cursor-pointer
+                hover:bg-green-600 hover:text-white
+                ease-linear
+                transition-all
+                duration-150">
+                <span class="mt-2 text-base leading-normal select-none animate-bounce ">Get Filtered Results</span>
+                <input type="submit" value="Export" hidden>
+            </label>
         </form>
     </div>
 </div>
@@ -119,6 +157,9 @@
     
     //updates when pressing checkboxes
     let species_list = df.columns.filter(item => item != "Unclasified")
+    let other_species_list = []
+
+    document.getElementById("species_list").value = [...species_list];
 
     const species_colors = {};
     species_list.forEach((item,idx) => {
@@ -128,29 +169,53 @@
     //updates when moving the slider
     let k_mer_threshold = 0.01
 
+    let show_unclassified = false;
+    let species_threshold = 5;
+
     const update_k_mer_threshold = (new_val) => {
         document.getElementById("k_mer_threshold").value = new_val;
         k_mer_threshold = new_val;
     }
+    update_k_mer_threshold(k_mer_threshold)
+
+    const update_species_threshold = (new_val) => {
+        species_threshold = new_val;
+    }
+    update_species_threshold(20)
+
 
     const draw_species_pie_chart = (chart, species_list, k_mer_threshold) => {
 
         sum_total = df.sum({axis: 1}).sum({axis: 0});
         const threshold_list = df.index.filter(item => item >= k_mer_threshold)
+        // const temp_list = df.index.filter(item => item < k_mer_threshold)
+
         sum_classified_df = df.loc({ rows: threshold_list, columns: species_list }).sum({axis: 1});
+
         sum_unclassified = sum_total - sum_classified_df.sum({axis: 0});
         colors_classified = species_list.map((item) => species_colors[item]);
 
-        chart.data.labels = [...sum_classified_df.index, "unclassified"]
+
+        sum_other_df = sum_classified_df.loc(sum_classified_df.lt(species_threshold)).sum()
+        sum_classified_df = sum_classified_df.loc(sum_classified_df.gt(species_threshold))
+
+
+        chart.data.labels = [...sum_classified_df.index, "other"]
+        show_unclassified ? chart.data.labels.push("unclassified") : null;
+
         chart.data.datasets = [{
-            label: 'Species',
-            data: [...sum_classified_df.values, sum_unclassified],
+            label: 'Classified',
+            data: [...sum_classified_df.values, sum_other_df],
             hoverOffset: 4,
-            backgroundColor: [...colors_classified, "blue"]
-        }];
+            backgroundColor: [...colors_classified, "orange"]
+            }
+        ];
+        show_unclassified ? chart.data.datasets[0].data.push(sum_unclassified) : null;
+        show_unclassified ? chart.data.datasets[0].backgroundColor.push("blue") : null;
+
 
         chart.options.borderRadius = 10
-        chart.options.radius = "60%"
+        chart.options.radius = "75%"
         chart.options.plugins.legend.display = false;
 
         chart.update()
@@ -158,7 +223,7 @@
 
     const draw_kmer_hist = (chart, pie_chart, species_list, new_k_mer_threshold) => {
         update_k_mer_threshold(new_k_mer_threshold)
-        console.log(species_list)
+        // console.log(species_list)
         sum_total_df = df.sum({axis: 0});
         const y_max = sum_total_df.max();
         sum_classified_df = df.loc({ columns: species_list }).sum({axis: 0});
@@ -180,13 +245,15 @@
                 backgroundColor: "orange",
                 label: 'Classified'
 
-            },
-            {
+            }
+        ];
+        
+        show_unclassified ? chart.data.datasets.push({
                 data: unclassified_y,
                 backgroundColor: "blue",
                 label: 'Unclassified'
-            }
-        ];
+            }) : null;
+
 
         chart.options = {
             onClick: (event) => { 
@@ -208,7 +275,10 @@
             plugins: {
                 title: {
                     display: true,
-                    text: 'classification by threshold k-mer'
+                    text: 'classification by threshold k-mer',
+                    font: {
+                        size: 24
+                    }
                 },
                 annotation: {
                     annotations: {
@@ -220,6 +290,9 @@
                             borderWidth: 2,
                         }
                     }
+                },
+                legend: {
+                    display: false
                 }
             },
             scales: {
@@ -229,10 +302,25 @@
                     type: 'linear',
                     min: 0.0,
                     max: 1.0,
-                    offset: false
+                    offset: false,
+                    title: {
+                        display: true,
+                        text: 'Percent Threshold',
+                        font: {
+                            size: 16
+                        }
+                    }
                 },
                 y: {
-                    stacked: true
+                    stacked: true,
+                    type: 'logarithmic',
+                    title: {
+                        display: true,
+                        text: 'Number of reads (log-scale)',
+                        font: {
+                            size: 16
+                        }
+                    }
                 }
             }
         };
@@ -248,7 +336,9 @@
     bar_chart = new Chart('bar_chart', {
             type: "bar",
             data: {},
-            options: {}
+            options: {
+                
+            }
         }       
     );
 
@@ -258,7 +348,7 @@
             options: {}
         }       
     );
-    console.log(species_list)
+    // console.log(species_list)
 
     draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold)
     draw_species_pie_chart(pie_chart, species_list, k_mer_threshold)
@@ -277,9 +367,14 @@
             if (species_list.includes(item)) {
                 item_index = species_list.indexOf(item);
                 species_list.splice(item_index, 1);
+                other_species_list.push(item)
             } else {
                 species_list.push(item)
+                item_index = other_species_list.indexOf(item);
+                other_species_list.splice(item_index, 1);
             }
+            species_list.sort()
+            other_species_list.sort()
             //update the species_list to sent to backend
             document.getElementById("species_list").value = [...species_list];
             draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold);
@@ -297,6 +392,13 @@
     if (alert_user === 'true'){
         alert('{{text}}')
     }
+
+    const toggle_unclassified = () => {
+        show_unclassified = !show_unclassified;
+        draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold)
+        draw_species_pie_chart(pie_chart, species_list, k_mer_threshold)
+    }
+
     
 </script>
 

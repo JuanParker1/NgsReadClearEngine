@@ -132,8 +132,8 @@ class UI_CONSTS:
         State.Running: "Your process is running",
         State.Finished: "Your process finished... Redirecting to results page", #TODO is needed??
         State.Crashed: "Your process crashed\n we suggest you rerun the process.", #TODO finish
-        State.Waiting: "Your process is waiting\nWe currently run other process :(\nShortly your process will be started",
-        State.Init: "We are verifing your input, shortly your process will start",
+        State.Waiting: "We currently run other processes :( \n Your process will start soon",
+        State.Init: "We are verifing your input, your process will start shortly",
         State.Queue: "Job is queued",
     }
     
