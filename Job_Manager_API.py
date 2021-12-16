@@ -32,8 +32,8 @@ class Job_Manager_API:
         if state == State.Finished:
             if email_address != None:
                 self.__build_and_send_mail(process_id, state, email_address)
-        elif state == State.Crashed:
-            self.__build_and_send_mail(process_id, state, 'elya.wygoda@gmail.com')
+        #elif state == State.Crashed:
+            #self.__build_and_send_mail(process_id, state, 'elya.wygoda@gmail.com')
         self.__func2update_html(process_id, state)
 
     def __delete_folder(self, process_id):
