@@ -11,7 +11,7 @@ TEMP_CLASSIFIED_IDS = Path('TempClassifiedIds.txt')
 TEMP_UNCLASSIFIED_IDS = Path('TempUnClassifiedIds.txt')
 INPUT_CLASSIFIED_FILE_NAME = Path('classified.fasta')
 INPUT_UNCLASSIFIED_FILE_NAME = Path('unclassified.fasta')
-FINAL_OUTPUT_FILE_NAME = Path('FilteredResults.gz')
+FINAL_OUTPUT_FILE_NAME = Path('FilteredResults.txt.gz')
 KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME = Path('summary_stat_UI.json')
 RANK_KRAKEN_TRANSLATIONS = {'U': 'Unclassified', 'R': 'Root', 'D': 'Domain', 'K': 'Kingdom', 'P': 'Phylum',
                             'C': 'Class', 'O': 'Order', 'F': 'Family', 'G': 'Genus', 'S': 'Species'}
@@ -44,6 +44,7 @@ NEW_RUNNING_JOBS_NAME = 'NewRunning'  # todo: edo put here what you want
 FINISHED_JOBS_NAME = 'Finished'  # todo: edo put here what you want
 ERROR_JOBS_NAME = 'Error'  # todo: edo put here what you want
 WEIRD_BEHAVIOR_JOB_TO_CHECK = ''  # todo: edo put here what you want
+PATH2SAVE_PROCESS_DICT = r'SavedObjects/processes.dict'
 
 # Kraken Variables
 # todo replace all paths
