@@ -7,10 +7,11 @@ import pandas as pd
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME, \
     DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, \
     UNCLASSIFIED_COLUMN_NAME, RESULTS_SUMMARY_FILE_NAME, SUMMARY_RESULTS_COLUMN_NAMES, TEMP_CLASSIFIED_IDS, \
-    TEMP_UNCLASSIFIED_IDS, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, KRAKEN_UNCLASSIFIED_COLUMN_NAME
+    TEMP_UNCLASSIFIED_IDS, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, KRAKEN_UNCLASSIFIED_COLUMN_NAME, \
+    RANK_KRAKEN_TRANSLATIONS
 import json
 import re
-
+import numpy as np
 
 def parse_kmer_data(kraken_raw_output_df):
     """
@@ -72,6 +73,8 @@ def process_output(**kwargs):
     """
     # parse arguments and set up
     outputFilePath = Path(kwargs['outputFilePath'])
+    remove_only_high_level_res = kwargs['remove_only_high_level_res']
+
     if outputFilePath is None:
         raise Exception("no output file path was provided for pre-processor")
 
@@ -85,7 +88,6 @@ def process_output(**kwargs):
     temp_unclass_path = root_folder / TEMP_UNCLASSIFIED_IDS
     temp_class_path = root_folder / TEMP_CLASSIFIED_IDS
     kraken_summary_results_For_UI_path = root_folder / KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME
-    first = True
     how_many_unclassified = 0
     # used later to prepare the files for faster post process
     classified_ids = []
@@ -100,12 +102,26 @@ def process_output(**kwargs):
     # prepare renaming dict
     summary_res_df = pd.read_csv(results_summary_path, sep='\t', names=SUMMARY_RESULTS_COLUMN_NAMES)
     summary_res_df['name'] = summary_res_df['name'].str.strip()
+    summary_res_df['rank_code'] = summary_res_df['rank_code'].str.rstrip('1234567890')
+    # fix high level k-mers
     high_level_k_mers = summary_res_df[summary_res_df['rank_code'].isin(['R', 'K', 'D', 'P'])]['ncbi_taxonomyID'].values
-    regex_exp_for_high_class = re.compile('[^0-9]' + '(' + '|'.join(high_level_k_mers.astype(str)) + ')' + ':[0-9]+')
+    if high_level_k_mers.size == 0:
+        high_level_k_mers = np.array(['STAM'])  # dummy value to fix small results issue (when there is no contamination)
+    regex_exp_for_high_class_orig = '[^0-9]' + '(' + '|'.join(high_level_k_mers.astype(str)) + ')' + ':[0-9]+'
+    regex_exps = [regex_exp_for_high_class_orig]
+    levels = ['high_level_removed']
+    if not remove_only_high_level_res:  # in case we want to do this for each level
+        levels += ['D', 'K', 'P', 'C', 'O', 'F', 'G', 'S']
+        for level_of_classification in ['D', 'K', 'P', 'C', 'O', 'F', 'G', 'S']:
+            level_k_mers = summary_res_df[~summary_res_df['rank_code'].isin([level_of_classification])]['ncbi_taxonomyID'].values
+            if level_k_mers.size == 0:
+                level_k_mers = np.array(['STAM'])  # dummy value to fix small results issue (when there is no contamination)
+            regex_exp_for_high_class_temp = '[^0-9]' + '(' + '|'.join(level_k_mers.astype(str)) + ')' + ':[0-9]+'
+            regex_exps.append(regex_exp_for_high_class_temp)
+
     ncbi_renaming_dict = get_NCBI_renaming_dict(summary_res_df)
 
     # create summary statistics json for UI
-    summary_res_df['rank_code'] = summary_res_df['rank_code'].str.rstrip('1234567890')
     percent_of_contamination = round(100 - summary_res_df[summary_res_df[
                                                               'rank_code'] == 'U']['percentage_of_reads'].iloc[0], 2)
     summary_res_for_UI_df = summary_res_df[summary_res_df['rank_code'] == 'C'].sort_values('percentage_of_reads',
@@ -118,67 +134,74 @@ def process_output(**kwargs):
         json.dump(summary_res_for_UI_dict, jsp)
 
     # main processing loop
-    for chunk in pd.read_csv(outputFilePath, sep='\t', header=None, chunksize=DF_LOADER_CHUCK_SIZE):
+    for i, level in zip(range(len(regex_exps)), levels):
+        regex_exp_for_high_class = regex_exps[i]
+        first = True
+        for chunk in pd.read_csv(outputFilePath, sep='\t', header=None, chunksize=DF_LOADER_CHUCK_SIZE):
 
-        # process the results
-        chunk.rename(columns={0: 'is_classified', 1: "read_name", 2: "classified_species", 3: "read_length",
-                              4: "all_classified_K_mers"}, inplace=True)
-        # remove high order k-mers
-        chunk['to_remove'] = ' '
-        chunk['all_classified_K_mers'] = chunk['to_remove'].str.cat(chunk['all_classified_K_mers'])
-        chunk.drop(columns='to_remove', inplace=True)
-        chunk['all_classified_K_mers'] = chunk['all_classified_K_mers'].str.replace(regex_exp_for_high_class, '')
+            # process the results
+            chunk.rename(columns={0: 'is_classified', 1: "read_name", 2: "classified_species", 3: "read_length",
+                                  4: "all_classified_K_mers"}, inplace=True)
+            # remove high order k-mers
+            chunk['to_remove'] = ' '
+            chunk['all_classified_K_mers'] = chunk['to_remove'].str.cat(chunk['all_classified_K_mers'])
+            chunk.drop(columns='to_remove', inplace=True)
+            chunk['all_classified_K_mers'] = chunk['all_classified_K_mers'].str.replace(regex_exp_for_high_class, '')
 
-        # calculations
-        chunk = parse_kmer_data(chunk)
-        chunk = calc_kmer_statistics(chunk)
-        # typing and naming
-        chunk.replace({"max_specie": ncbi_renaming_dict}, inplace=True)
-        chunk['max_k_mer_p'] = chunk['max_k_mer_p'].astype(float)
-        chunk['all_classified_K_mers'] = chunk['all_classified_K_mers'].astype(str)
-        chunk['classified_species'] = chunk['classified_species'].astype(str)
+            # calculations
+            chunk = parse_kmer_data(chunk)
+            chunk = calc_kmer_statistics(chunk)
+            # typing and naming
+            chunk.replace({"max_specie": ncbi_renaming_dict}, inplace=True)
+            chunk['max_k_mer_p'] = chunk['max_k_mer_p'].astype(float)
+            chunk['all_classified_K_mers'] = chunk['all_classified_K_mers'].astype(str)
+            chunk['classified_species'] = chunk['classified_species'].astype(str)
 
-        # separate unclassified and classified results
-        # fix kraken discrepancy with us
-        kraken_mistakes = chunk[(chunk['is_classified'] == 'C') & (chunk['max_specie'] == KRAKEN_UNCLASSIFIED_COLUMN_NAME)]
-        chunk.drop(kraken_mistakes.index, inplace=True)
-        # actually separate
-        unclassified_chunk = chunk[chunk['is_classified'] == 'U'].append(kraken_mistakes)
-        classified_chunk = chunk[chunk['is_classified'] == 'C']
-        how_many_unclassified += len(unclassified_chunk.index)
+            # separate unclassified and classified results
+            # fix kraken discrepancy with us
+            kraken_mistakes = chunk[(chunk['is_classified'] == 'C') & (chunk['max_specie'] == KRAKEN_UNCLASSIFIED_COLUMN_NAME)]
+            chunk.drop(kraken_mistakes.index, inplace=True)
+            # actually separate
+            unclassified_chunk = chunk[chunk['is_classified'] == 'U'].append(kraken_mistakes)
+            classified_chunk = chunk[chunk['is_classified'] == 'C']
+            how_many_unclassified += len(unclassified_chunk.index)
 
-        # create UI results matrix where its percentiles as rows, k-mers as columns and counts as values
-        df_preprocess_temp = pd.crosstab(classified_chunk.max_specie, classified_chunk.bins_max_k_mer_p).T
+            # create UI results matrix where its percentiles as rows, k-mers as columns and counts as values
+            df_preprocess_temp = pd.crosstab(classified_chunk.max_specie, classified_chunk.bins_max_k_mer_p).T
 
-        # save results:
-        classified_ids += list(classified_chunk["read_name"])
-        unclassified_ids += list(unclassified_chunk["read_name"])
+            # save results: ( we assume the first regex exp is the regular one - all high levels removed
+            if i == 0:
+                classified_ids += list(classified_chunk["read_name"])
+                unclassified_ids += list(unclassified_chunk["read_name"])
+            else:
+                processed_Unclassified_for_PostProcess_results_path += RANK_KRAKEN_TRANSLATIONS.get(level, 'NameNotFound')
+                processed_Classified_for_PostProcess_results_path += RANK_KRAKEN_TRANSLATIONS.get(level, 'NameNotFound')
 
-        if first:
-            unclassified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Unclassified_for_PostProcess_results_path),
-                                                               mode='a', header=True, index=False)
-            classified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Classified_for_PostProcess_results_path),
-                                                             mode='a', header=True, index=False)
-            df_preprocess = df_preprocess_temp
-            first = False
-        else:
-            unclassified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Unclassified_for_PostProcess_results_path),
-                                                               mode='a', header=False, index=False)
-            classified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Classified_for_PostProcess_results_path),
-                                                             mode='a', header=False, index=False)
-            df_preprocess = df_preprocess.append(df_preprocess_temp)
+            if first:
+                unclassified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Unclassified_for_PostProcess_results_path),
+                                                                   mode='a', header=True, index=False)
+                classified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Classified_for_PostProcess_results_path),
+                                                                 mode='a', header=True, index=False)
+                df_preprocess = df_preprocess_temp
+                first = False
+            else:
+                unclassified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Unclassified_for_PostProcess_results_path),
+                                                                   mode='a', header=False, index=False)
+                classified_chunk[RESULTS_COLUMNS_TO_KEEP].to_csv(str(processed_Classified_for_PostProcess_results_path),
+                                                                 mode='a', header=False, index=False)
+                df_preprocess = df_preprocess.append(df_preprocess_temp)
 
-    # save final matrix for UI
-    df_preprocess.fillna(0, inplace=True)
-    df_preprocess = df_preprocess.astype(int)
-    df_preprocess = df_preprocess.groupby(df_preprocess.index).sum()
-    # add unclassified to matrix
-    df_preprocess[UNCLASSIFIED_COLUMN_NAME] = 0
-    line = pd.DataFrame(data=[[0 for i in df_preprocess.columns]], columns=df_preprocess.columns, index=[0.00])
-    line[UNCLASSIFIED_COLUMN_NAME] = how_many_unclassified
-    df_preprocess = line.append(df_preprocess)
+        # save final matrix for UI
+        df_preprocess.fillna(0, inplace=True)
+        df_preprocess = df_preprocess.astype(int)
+        df_preprocess = df_preprocess.groupby(df_preprocess.index).sum()
+        # add unclassified to matrix
+        df_preprocess[UNCLASSIFIED_COLUMN_NAME] = 0
+        line = pd.DataFrame(data=[[0 for i in df_preprocess.columns]], columns=df_preprocess.columns, index=[0.00])
+        line[UNCLASSIFIED_COLUMN_NAME] = how_many_unclassified
+        df_preprocess = line.append(df_preprocess)
 
-    df_preprocess.to_csv(processed_for_UI_results_path)
+        df_preprocess.to_csv(processed_for_UI_results_path)
 
     # create search lists for SeqKit
     classified_ids_string = '\n'.join(classified_ids)
@@ -199,5 +222,6 @@ def process_output(**kwargs):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Running RL project Main')
     parser.add_argument('--outputFilePath', default=None, help='path to output file to process')
+    parser.add_argument('--remove_only_high_level_res', default=True, help='path to output file to process')
     args = parser.parse_args()
     process_output(**vars(args))
