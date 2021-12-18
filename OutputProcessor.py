@@ -111,7 +111,7 @@ def process_output(**kwargs):
     summary_res_for_UI_df = summary_res_df[summary_res_df['rank_code'] == 'C'].sort_values('percentage_of_reads',
                                                                                              ascending=False)
     number_of_classes = len(summary_res_for_UI_df.index)
-    most_common_class = summary_res_for_UI_df.head(1)['name'].iloc[0] if number_of_classs > 0 else 'No contamination Found'
+    most_common_class = summary_res_for_UI_df.head(1)['name'].iloc[0] if number_of_classes > 0 else 'No contamination Found'
     summary_res_for_UI_dict = {'percent_of_contamination': percent_of_contamination, 'most_common_class_contamination':
         most_common_class, 'number_of_classes': number_of_classes}
     with open(kraken_summary_results_For_UI_path, 'w') as jsp:
