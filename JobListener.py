@@ -67,6 +67,10 @@ class PbsListener:
                 if job_status == 'R':
                     # case where job finished
                     if job_row['origin'] == 'P':
+                        # check to see that the fact the it exited Running doesn't mean it moved to another state
+                        if len(relevant_df[relevant_df[JOB_NUMBER_COL] == job_row[JOB_NUMBER_COL]][
+                                   JOB_STATUS_COL].unique()) != 1:
+                            continue
                         logger.debug(f'job_row = {job_row} finished')
                         self.job_prefix_to_function_mapping[job_prefix][FINISHED_JOBS_NAME](job_number)
                     # case of newly running job
@@ -75,7 +79,7 @@ class PbsListener:
                         self.job_prefix_to_function_mapping[job_prefix][NEW_RUNNING_JOBS_NAME](job_number)
                     else:
                         self.job_prefix_to_function_mapping[job_prefix][WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
-                elif job_status == 'Q':
+                elif job_status == 'Q' and job_row['origin'] == 'N':
                     logger.info(f'job_row = {job_row} queue')
                     self.job_prefix_to_function_mapping[job_prefix][QUEUE_JOBS_NAME](job_number)
                 elif job_status == 'E':

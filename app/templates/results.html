@@ -148,6 +148,8 @@
     let new_index = []
     let new_data = {}
     const json_data = JSON.parse('{{ data|safe }}');
+    const json_summary_stats = JSON.parse('{{ summary_stats| tojson |safe }}');
+    console.log(json_summary_stats)
     Object.entries(json_data).map(([key, val]) => {
         new_data[key] = Object.values(val);
         new_index = Object.keys(val);
