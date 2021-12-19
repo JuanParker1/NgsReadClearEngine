@@ -6,7 +6,7 @@ from utils import logger
 from SharedConsts import BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_SEARCH_SCRIPT_COMMAND, KRAKEN_DB_NAME, KRAKEN_JOB_TEMPLATE, \
     KRAKEN_JOB_QUEUE_NAME, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_PREFIX, PATH_TO_OUTPUT_PROCESSOR_SCRIPT, \
     CODE_BASE_PATH, RESULTS_SUMMARY_FILE_NAME, INPUT_CLASSIFIED_FILE_NAME, INPUT_UNCLASSIFIED_FILE_NAME, \
-    TEMP_CLASSIFIED_IDS, TEMP_UNCLASSIFIED_IDS
+    TEMP_CLASSIFIED_IDS, TEMP_UNCLASSIFIED_IDS, INTERVAL_BETWEEN_LISTENER_SAMPLES
 
 
 class SearchEngine:
@@ -77,7 +77,8 @@ class SearchEngine:
                                           classified_ids_results=classified_input_path,
                                           unclassified_ids_results=unclassified_input_path,
                                           classified_ids_list=result_path.parent / TEMP_CLASSIFIED_IDS,
-                                          unclassified_ids_list=result_path.parent / TEMP_UNCLASSIFIED_IDS)
+                                          unclassified_ids_list=result_path.parent / TEMP_UNCLASSIFIED_IDS,
+                                          sleep_interval=INTERVAL_BETWEEN_LISTENER_SAMPLES)
 
     @staticmethod
     def _create_parameter_string(run_parameters):

@@ -5,7 +5,8 @@ from subprocess import PIPE
 
 from SharedConsts import POST_PROCESS_COMMAND_TEMPLATE, RESULTS_FOR_OUTPUT_CLASSIFIED_RAW_FILE_NAME, \
     RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, INPUT_UNCLASSIFIED_FILE_NAME, INPUT_CLASSIFIED_FILE_NAME, \
-    FINAL_OUTPUT_FILE_NAME, POSTPROCESS_JOB_PREFIX, POSTPROCESS_JOB_QUEUE_NAME, NUBMER_OF_CPUS_POSTPROCESS_JOB
+    FINAL_OUTPUT_FILE_NAME, POSTPROCESS_JOB_PREFIX, POSTPROCESS_JOB_QUEUE_NAME, NUBMER_OF_CPUS_POSTPROCESS_JOB, \
+    INTERVAL_BETWEEN_LISTENER_SAMPLES
 from utils import logger
 
 
@@ -44,7 +45,8 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
                                                           error_files_path=job_logs_path,
                                                           output_files_path=job_logs_path,
                                                           path_to_temp_file=path_to_temp_file,
-                                                          path_to_temp_unclassified_file=path_to_temp_unclassified)
+                                                          path_to_temp_unclassified_file=path_to_temp_unclassified,
+                                                          sleep_interval=INTERVAL_BETWEEN_LISTENER_SAMPLES)
 
     # run post process on PBS
     temp_script_path = os.path.join(str(root_folder), f'TempPostProcessFor.sh')

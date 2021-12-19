@@ -65,7 +65,7 @@ class Job_Manager_Thread_Safe:
         # create listener on queue
         self.__listener = PbsListener(function_to_call_listener)
         self.__scheduler = BackgroundScheduler()
-        self.__scheduler.add_job(self.__listener.run, 'interval', seconds=5)
+        self.__scheduler.add_job(self.__listener.run, 'interval', seconds=sc.INTERVAL_BETWEEN_LISTENER_SAMPLES)
         self.__scheduler.start()
         
     def __save_processes_state_dict2file(self):
@@ -190,21 +190,6 @@ class Job_Manager_Thread_Safe:
         #update file with current process_state_dict
         self.__save_processes_state_dict2file()
     
-
-    def get_running_process(self):
-        self.__mutex_processes_state_dict.acquire()
-        values2return = []
-        for key in self.__processes_state_dict.keys():
-            values2return.append((key, self.__processes_state_dict[key].get_job_state(sc.KRAKEN_JOB_PREFIX)))
-        self.__mutex_processes_state_dict.release()
-        return values2return
-
-    def get_waiting_process(self):
-        self.__mutex_processes_waiting_queue.acquire()
-        processes = self.__waiting_list
-        self.__mutex_processes_waiting_queue.release()
-        return processes
-
     def __pop_from_waiting_queue(self):
         self.__mutex_processes_waiting_queue.acquire()
         process_tuple2return = None, None, None
@@ -213,7 +198,7 @@ class Job_Manager_Thread_Safe:
         self.__mutex_processes_waiting_queue.release()
         logger.info(f'process2return = {process_tuple2return}')
         return process_tuple2return
-
+    
     def get_job_state(self, process_id: str, job_prefix: str):
         state2return = None
         if process_id in self.__processes_state_dict:
