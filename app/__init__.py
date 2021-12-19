@@ -73,7 +73,7 @@ def allowed_file(filename):
 def process_state(process_id):
     job_state = manager.get_kraken_job_state(process_id)
     if job_state == None:
-        return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
+        return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
     if job_state != State.Finished:
         return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
     else:
@@ -85,29 +85,21 @@ def download_file(process_id):
         file2send = manager.export_file(process_id)
         if file2send == None:
             logger.warning(f'failed to export file exporting, process_id = {process_id}, file2send = {file2send}')
-            return render_template('export_file.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_EXPORT_FILE_UNAVAILABLE)
+            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_EXPORT_FILE_UNAVAILABLE)
         logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
-        return send_file(file2send)
-    return render_template('export_file.html', alert_user='false', text='')
+        return send_file(file2send, mimetype='application/octet-stream')
+    return render_template('export_file.html')
 
 @app.route('/post_process_state/<process_id>')
 def post_process_state(process_id):
     job_state = manager.get_postprocess_job_state(process_id)
     if job_state == None:
-        return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
+        return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
     if job_state != State.Finished:
         return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
     else:
         return redirect(url_for('download_file', process_id=process_id))
 
-@app.route('/admin/running')
-def running_processes():
-    return render_template('runnning_processes.html', processes_ids=manager.get_running_process())
-
-@app.route('/admin/waiting')
-def waiting_processes():
-    return render_template('waiting_processes.html', processes_ids=manager.get_waiting_process())
-    
 @app.route('/results/<process_id>', methods=['GET', 'POST'])
 def results(process_id):
     # export
@@ -118,12 +110,12 @@ def results(process_id):
         except Exception as e:
             logger.error(f'{e}')
             #TODO what about the df??
-            return render_template('results.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_INVALID_EXPORT_PARAMS)
+            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_INVALID_EXPORT_PARAMS)
         logger.info(f'exporting, process_id = {process_id}, k_threshold = {k_threshold}, species_list = {species_list}')
         man_results = manager.add_postprocess(process_id, species_list, k_threshold)
         if man_results == None:
             #TODO what about the df??
-            return render_template('results.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_POSTPROCESS_CRASH)
+            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_POSTPROCESS_CRASH)
         logger.info(f'process_id = {process_id}, post_process added')
         return redirect(url_for('post_process_state', process_id=process_id))
     # results
@@ -132,7 +124,7 @@ def results(process_id):
         logger.error(f'process_id = {process_id}, df = {df}')
         return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed], summary_stats=summary_json)
     logger.info(f'process_id = {process_id}, df = {df}')
-    return render_template('results.html', alert_user='false', text='', data=df.to_json(), summary_stats=summary_json)
+    return render_template('results.html', data=df.to_json(), summary_stats=summary_json)
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -143,12 +135,12 @@ def upload_file():
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
         if file.filename == '':
-            return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_NO_FILE_UPLOADED)
+            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_NO_FILE_UPLOADED)
         if file and allowed_file(file.filename):
             email_address = request.form.get('email', None)
             if email_address == None:
                 logger.warning(f'email_address not available')
-                return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_INVALID_MAIL)
+                return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_INVALID_MAIL)
             logger.info(f'file uploaded = {file}, email_address = {email_address}')
             filename = secure_filename(file.filename)
             new_process_id = manager.get_new_process_id()
@@ -162,10 +154,10 @@ def upload_file():
             man_results = manager.add_kraken_process(new_process_id, email_address)
             if not man_results:
                 logger.warning(f'job_manager_api can\'t add process')
-                return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS)
+                return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS)
             logger.info(f'process added man_results = {man_results}, redirecting url')
             return redirect(url_for('process_state', process_id=new_process_id))
         else:
             logger.info(f'file extention not allowed')
-            return render_template('home.html', alert_user='true', text=UI_CONSTS.ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED)
-    return render_template('home.html', alert_user='false', text='')
+            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED)
+    return render_template('home.html')
