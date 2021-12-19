@@ -63,31 +63,34 @@ class PbsListener:
             for index, job_row in relevant_df.iterrows():
                 job_number = job_row[JOB_NUMBER_COL]
                 job_status = job_row[JOB_STATUS_COL]
-                # case of running jobs
-                if job_status == 'R':
-                    # case where job finished
-                    if job_row['origin'] == 'P':
-                        # check to see that the fact the it exited Running doesn't mean it moved to another state
-                        if len(relevant_df[relevant_df[JOB_NUMBER_COL] == job_row[JOB_NUMBER_COL]][
-                                   JOB_STATUS_COL].unique()) != 1:
-                            continue
-                        logger.debug(f'job_row = {job_row} finished')
-                        self.job_prefix_to_function_mapping[job_prefix][FINISHED_JOBS_NAME](job_number)
-                    # case of newly running job
-                    elif job_row['origin'] == 'N':
-                        logger.debug(f'job_row = {job_row} running')
-                        self.job_prefix_to_function_mapping[job_prefix][NEW_RUNNING_JOBS_NAME](job_number)
+                try:
+                    # case of running jobs
+                    if job_status == 'R':
+                        # case where job finished
+                        if job_row['origin'] == 'P':
+                            # check to see that the fact the it exited Running doesn't mean it moved to another state
+                            if len(relevant_df[relevant_df[JOB_NUMBER_COL] == job_row[JOB_NUMBER_COL]][
+                                       JOB_STATUS_COL].unique()) != 1:
+                                continue
+                            logger.debug(f'job_row = {job_row} finished')
+                            self.job_prefix_to_function_mapping[job_prefix][FINISHED_JOBS_NAME](job_number)
+                        # case of newly running job
+                        elif job_row['origin'] == 'N':
+                            logger.debug(f'job_row = {job_row} running')
+                            self.job_prefix_to_function_mapping[job_prefix][NEW_RUNNING_JOBS_NAME](job_number)
+                        else:
+                            self.job_prefix_to_function_mapping[job_prefix][WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
+                    elif job_status == 'Q' and job_row['origin'] == 'N':
+                        logger.info(f'job_row = {job_row} queue')
+                        self.job_prefix_to_function_mapping[job_prefix][QUEUE_JOBS_NAME](job_number)
+                    elif job_status == 'E':
+                        logger.warning(f'job_row = {job_row} error')
+                        self.job_prefix_to_function_mapping[job_prefix][ERROR_JOBS_NAME](job_number)
                     else:
+                        logger.warning(f'job_row = {job_row} weird behavior')
                         self.job_prefix_to_function_mapping[job_prefix][WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
-                elif job_status == 'Q' and job_row['origin'] == 'N':
-                    logger.info(f'job_row = {job_row} queue')
-                    self.job_prefix_to_function_mapping[job_prefix][QUEUE_JOBS_NAME](job_number)
-                elif job_status == 'E':
-                    logger.warning(f'job_row = {job_row} error')
-                    self.job_prefix_to_function_mapping[job_prefix][ERROR_JOBS_NAME](job_number)
-                else:
-                    logger.warning(f'job_row = {job_row} weird behavior')
-                    self.job_prefix_to_function_mapping[job_prefix][WEIRD_BEHAVIOR_JOB_TO_CHECK](job_number)
+                except Exception as e:
+                    logger.error(f'There was an error with job {job_number}, with error {e}')
 
     def get_server_job_stats(self):
         """
