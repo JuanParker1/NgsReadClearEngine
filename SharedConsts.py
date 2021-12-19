@@ -38,13 +38,14 @@ SRVER_USERNAME = 'bioseq'
 JOB_RUNNING_TIME_LIMIT_IN_HOURS = 10
 
 # Job listener and management function naming
-LONG_RUNNING_JOBS_NAME = 'LongRunning'  # todo: edo put here what you want
-QUEUE_JOBS_NAME = 'Queue'  # todo: edo put here what you want
-NEW_RUNNING_JOBS_NAME = 'NewRunning'  # todo: edo put here what you want
-FINISHED_JOBS_NAME = 'Finished'  # todo: edo put here what you want
-ERROR_JOBS_NAME = 'Error'  # todo: edo put here what you want
-WEIRD_BEHAVIOR_JOB_TO_CHECK = ''  # todo: edo put here what you want
+LONG_RUNNING_JOBS_NAME = 'LongRunning'
+QUEUE_JOBS_NAME = 'Queue'
+NEW_RUNNING_JOBS_NAME = 'NewRunning'
+FINISHED_JOBS_NAME = 'Finished'
+ERROR_JOBS_NAME = 'Error'
+WEIRD_BEHAVIOR_JOB_TO_CHECK = ''
 PATH2SAVE_PROCESS_DICT = r'SavedObjects/processes.dict'
+INTERVAL_BETWEEN_LISTENER_SAMPLES = 5  # in seconds
 
 # Kraken Variables
 # todo replace all paths
@@ -79,6 +80,8 @@ conda activate
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
+sleep {sleep_interval}
+
 {kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 --use-names --report {report_file_path} {additional_parameters}
 python {path_to_output_processor} --outputFilePath "{kraken_results_path}"
 cat {query_path} | seqkit grep -f {classified_ids_list}  -o {classified_ids_results}
@@ -101,6 +104,8 @@ POST_PROCESS_COMMAND_TEMPLATE = '''
 
 source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
 conda activate
+
+sleep {sleep_interval}
 
 original_unclassified_data="{path_to_original_unclassified_data}"
 original_classified_data="{path_to_original_classified_data}"
