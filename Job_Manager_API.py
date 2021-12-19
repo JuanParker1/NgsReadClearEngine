@@ -1,11 +1,12 @@
 import os
 import shutil
 import uuid
+import json
 import pandas as pd
 from InputValidator import InputValidator
 from Job_Manager_Thread_Safe_GenomeFltr import Job_Manager_Thread_Safe_GenomeFltr
 from utils import send_email, State, logger, LOGGER_LEVEL_JOB_MANAGE_API
-from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, FINAL_OUTPUT_FILE_NAME
+from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, FINAL_OUTPUT_FILE_NAME, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME
 logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_API)
 
 
@@ -31,8 +32,8 @@ class Job_Manager_API:
         if state == State.Finished:
             if email_address != None:
                 self.__build_and_send_mail(process_id, state, email_address)
-        elif state == State.Crashed:
-            self.__build_and_send_mail(process_id, state, 'elya.wygoda@gmail.com')
+        #elif state == State.Crashed:
+            #self.__build_and_send_mail(process_id, state, 'elya.wygoda@gmail.com')
         self.__func2update_html(process_id, state)
 
     def __delete_folder(self, process_id):
@@ -109,8 +110,14 @@ class Job_Manager_API:
         
     def get_UI_matrix(self, process_id):
         parent_folder = os.path.join(self.__upload_root_path, process_id)
-        csv_UI_matrix = os.path.join(parent_folder, K_MER_COUNTER_MATRIX_FILE_NAME)
-        if os.path.isfile(csv_UI_matrix):
-            return pd.read_csv(csv_UI_matrix,index_col=0)
-        logger.warning(f'process_id = {process_id} doen\'t have a result file')
-        return None
+        csv_UI_matrix_path = os.path.join(parent_folder, K_MER_COUNTER_MATRIX_FILE_NAME)
+        summary_stats_json_path = os.path.join(parent_folder, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME)
+        df2return = None
+        json2return = None
+        if os.path.isfile(csv_UI_matrix_path):
+            df2return = pd.read_csv(csv_UI_matrix_path,index_col=0)
+        if os.path.isfile(summary_stats_json_path):
+            json2return = json.load(open(summary_stats_json_path))
+        
+        logger.info(f'process_id = {process_id} df2return = {df2return} json2return = {json2return}')
+        return df2return, json2return
