@@ -75,6 +75,7 @@
 
       ]
   </script>
+  <script type="module" src="{{url_for('static',filename='js/results.js')}}"></script>
   <script src="https://cdn.jsdelivr.net/npm/danfojs@0.3.3/lib/bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.1/chart.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0/dist/chartjs-plugin-annotation.min.js"></script>
@@ -89,10 +90,10 @@
             <h1 class="text-8xl my-4">Sum stat placeholder</h1>
         </div>
         <div  class="flex flex-row items-center" >
-            <div class="border-2 mx-2" >
+            <div class="border-2 mx-2 shadow-lg" >
                 <canvas style="height: 480px; width: 640px" id="bar_chart" ></canvas>
             </div>
-            <div class="flex flex-col justify-between border-2 mx-2 px-2 py-2"   style="height: 480px;">
+            <div class="flex flex-col justify-between border-2 mx-2 px-2 py-2 shadow-lg"   style="height: 480px;">
                 <label class="
                 px-2
                 py-4
@@ -109,9 +110,15 @@
                 mx-3"
                 onclick="toggle_unclassified()">toggle unclassified</label  >
         
-                <div id="species_container" class="flex flex-col overflow-auto mx-3 border-2" style="height: 300px;"></div>
+                <div id="species_container" class="flex flex-col overflow-auto mx-3 px-1 border-2" style="height: 300px;">
+                    <div id="top_species_container" class="flex flex-col py-2 border-b-4">
+                    </div>
+
+                    <div id="other_species_container" class="flex flex-col my-2">
+                    </div>
+                </div>
             </div>
-            <div class="border-2 mx-2" >
+            <div class="border-2 mx-2 shadow-lg" >
                 <canvas style="height: 480px; width: 480px" id="pie_chart"> </canvas>
             </div>
         </div>
@@ -155,9 +162,18 @@
     df = new dfd.DataFrame(new_data, {index: new_index});
     
     //updates when pressing checkboxes
-    let species_list = df.columns.filter(item => item != "Unclasified")
-    let other_species_list = []
+    let species_list = [...df.columns]
+    const update_species_list = (item) => {
+        if (species_list.includes(item)) {
+            item_index = species_list.indexOf(item);
+            species_list.splice(item_index, 1);
+        } else {
+            species_list.push(item)
+        }
+    }
+    update_species_list("unclassified (taxid 0)");
 
+    
     document.getElementById("species_list").value = [...species_list];
 
     const species_colors = {};
@@ -167,32 +183,30 @@
     
     //updates when moving the slider
     let k_mer_threshold = 0.01
-
-    let show_unclassified = false;
-    let species_threshold = 5;
-
     const update_k_mer_threshold = (new_val) => {
         document.getElementById("k_mer_threshold").value = new_val;
         k_mer_threshold = new_val;
     }
     update_k_mer_threshold(k_mer_threshold)
 
+    let show_unclassified = false;
+    
+    let species_threshold = 5;
     const update_species_threshold = (new_val) => {
         species_threshold = new_val;
     }
     update_species_threshold(20)
 
 
-    const draw_species_pie_chart = (chart, species_list, k_mer_threshold) => {
+    const draw_species_pie_chart = (chart) => {
 
-        sum_total = df.sum({axis: 1}).sum({axis: 0});
+        let sum_total = df.sum({axis: 1}).sum({axis: 0});
         const threshold_list = df.index.filter(item => item >= k_mer_threshold)
-        // const temp_list = df.index.filter(item => item < k_mer_threshold)
 
-        sum_classified_df = df.loc({ rows: threshold_list, columns: species_list }).sum({axis: 1});
+        let sum_classified_df = df.loc({ rows: threshold_list, columns: species_list }).sum({axis: 1});
 
-        sum_unclassified = sum_total - sum_classified_df.sum({axis: 0});
-        colors_classified = species_list.map((item) => species_colors[item]);
+        let sum_unclassified = sum_total - sum_classified_df.sum({axis: 0});
+        let colors_classified = species_list.map((item) => species_colors[item]);
 
 
         sum_other_df = sum_classified_df.loc(sum_classified_df.lt(species_threshold)).sum()
@@ -220,9 +234,8 @@
         chart.update()
     }
 
-    const draw_kmer_hist = (chart, pie_chart, species_list, new_k_mer_threshold) => {
-        update_k_mer_threshold(new_k_mer_threshold)
-        // console.log(species_list)
+    const draw_kmer_hist = (chart, pie_chart) => {
+
         sum_total_df = df.sum({axis: 0});
         const y_max = sum_total_df.max();
         sum_classified_df = df.loc({ columns: species_list }).sum({axis: 0});
@@ -267,9 +280,9 @@
                     newX = Math.abs((event.x - xTop) / (xBottom - xTop));
                     newX = newX * (Math.abs(xMax - xMin)) + xMin;
                 };
-
-                draw_kmer_hist(chart, pie_chart, species_list, newX)
-                draw_species_pie_chart(pie_chart, species_list, newX)
+                update_k_mer_threshold(newX);
+                draw_kmer_hist(chart, pie_chart)
+                draw_species_pie_chart(pie_chart)
             },
             plugins: {
                 title: {
@@ -323,11 +336,117 @@
                 }
             }
         };
-
         chart.update()
-
     }
 
+
+    const draw_species_list = () => {
+        let sum_total = df.sum({axis: 1}).sum({axis: 0});
+        const threshold_list = df.index.filter(item => item >= k_mer_threshold);
+        let sum_classified_df = df.loc({ rows: threshold_list}).sum({axis: 1});
+        
+        let sort_index = sum_classified_df.sort_values({"ascending": false }).index
+        let sorted_by_freq = sum_classified_df.iloc(sort_index).index
+        sorted_by_freq = sorted_by_freq.filter(item => item != "unclassified (taxid 0)")
+
+        
+        const top_10_species = sorted_by_freq.slice(0,10).map((item) => {
+            let toggle = document.createElement("label");
+            toggle.setAttribute("id", "toggle_" + item);
+            const checkbox = document.createElement("input");
+            checkbox.setAttribute("type", "checkbox");
+            checkbox.setAttribute("id", item);
+            checkbox.setAttribute("class", "h-5 w-5")
+            checkbox.checked = species_list.includes(item) ? true : false;
+
+            checkbox.addEventListener("click", (change) => {
+                const item = change.target.id;
+                update_species_list(item);
+                //update the species_list to sent to backend
+                document.getElementById("species_list").value = [...species_list];
+                draw_kmer_hist(bar_chart, pie_chart);
+                draw_species_pie_chart(pie_chart);
+                draw_species_list();
+            });
+            toggle.appendChild(checkbox);
+            let label = document.createElement("span");
+            label.innerText = item;
+            toggle.appendChild(label);
+            return toggle;
+        });
+
+        const other_species = sorted_by_freq.slice(10,).map((item) => {
+            const listitem = document.createElement("li");
+            const toggle = document.createElement("label");
+            listitem.setAttribute("id", "toggle_" + item);
+            const checkbox = document.createElement("input");
+            checkbox.setAttribute("type", "checkbox");
+            checkbox.setAttribute("id", item);
+            checkbox.setAttribute("class", "h-5 w-5 mx-5")
+            checkbox.checked = species_list.includes(item) ? true : false;
+
+            checkbox.addEventListener("click", (change) => {
+                const item = change.target.id;
+                update_species_list(item);
+                //update the species_list to sent to backend
+                document.getElementById("species_list").value = [...species_list];
+                draw_kmer_hist(bar_chart, pie_chart);
+                draw_species_pie_chart(pie_chart);
+                draw_species_list();
+            });
+            let label = document.createElement("span");
+            label.innerText = item;
+            toggle.appendChild(checkbox)
+            toggle.appendChild(label);
+            listitem.appendChild(toggle);
+            return listitem;
+        });
+
+        const other_species_container = document.createElement("ul");
+        const listitem = document.createElement("li");
+        
+        const label = document.createElement("span");
+        label.innerText = "Other Organisms";
+        const other_species_toggle = document.createElement("input");
+        const other_species_label = document.createElement("label");
+
+        other_species_toggle.setAttribute("type", "checkbox");
+        other_species_toggle.setAttribute("value", "other");
+        other_species_toggle.setAttribute("id", "toggle_other_species");
+        other_species_toggle.setAttribute("class", "h-5 w-5");
+        other_species_toggle.checked = !other_species_toggle.checked;
+
+        other_species_toggle.addEventListener("click", (change) => {
+            sorted_by_freq.slice(10,).forEach((item) => {
+                update_species_list(item)
+                document.getElementById(item).checked = change.target.checked ? true : false;
+            });
+            //update the species_list to sent to backend
+            document.getElementById("species_list").value = [...species_list];
+            draw_kmer_hist(bar_chart, pie_chart);
+            draw_species_pie_chart(pie_chart);
+            // draw_species_list();
+        });
+
+        other_species_label.appendChild(other_species_toggle)
+        other_species_label.appendChild(label)
+
+
+        listitem.appendChild(other_species_label);
+        const other_species_list = document.createElement("ul");
+        other_species_list.replaceChildren(...other_species)
+        listitem.appendChild(other_species_list)
+        other_species_container.replaceChildren(listitem);
+
+
+        // other_species_container.appendChild(other_species_toggle)
+
+
+
+        species_container.children[0].replaceChildren(...top_10_species)
+        species_container.children[1].replaceChildren(other_species_container)
+
+    }
 
 
     Chart.register("chartjs-plugin-annotation");
@@ -335,9 +454,7 @@
     bar_chart = new Chart('bar_chart', {
             type: "bar",
             data: {},
-            options: {
-                
-            }
+            options: {}
         }       
     );
 
@@ -347,45 +464,12 @@
             options: {}
         }       
     );
-    // console.log(species_list)
 
-    draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold)
-    draw_species_pie_chart(pie_chart, species_list, k_mer_threshold)
 
-    species_list.map((item) => {
-        let toggle = document.createElement("label");
-        toggle.setAttribute("id", "toggle_" + item);
-        let checkbox = document.createElement("input");
-        checkbox.setAttribute("type", "checkbox");
-        checkbox.setAttribute("id", item);
-        checkbox.setAttribute("class", "h-5 w-5")
-        checkbox.setAttribute("checked", true);
+    draw_kmer_hist(bar_chart, pie_chart)
+    draw_species_pie_chart(pie_chart)
+    draw_species_list()
 
-        checkbox.addEventListener("change", (change) => {
-            const item = change.target.id
-            if (species_list.includes(item)) {
-                item_index = species_list.indexOf(item);
-                species_list.splice(item_index, 1);
-                other_species_list.push(item)
-            } else {
-                species_list.push(item)
-                item_index = other_species_list.indexOf(item);
-                other_species_list.splice(item_index, 1);
-            }
-            species_list.sort()
-            other_species_list.sort()
-            //update the species_list to sent to backend
-            document.getElementById("species_list").value = [...species_list];
-            draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold);
-            draw_species_pie_chart(pie_chart ,species_list, k_mer_threshold);
-        })
-        toggle.appendChild(checkbox);
-        let label = document.createElement("span");
-        label.innerText = item;
-        toggle.appendChild(label);
-
-        species_container.appendChild(toggle);
-    })
     
     const alert_user = '{{alert_user}}'
     if (alert_user === 'true'){
