@@ -51,11 +51,10 @@
 		canvas.height = img.height;
 		canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height);
 		let corner_color = canvas.getContext('2d').getImageData(1, 1, 1, 1).data;
-		console.log(arrToHex(corner_color.slice(0,3)))
-		document.getElementById("main_screen").style.backgroundColor =  arrToHex(corner_color.slice(0,3));
 
+		document.getElementById("main_screen").style.backgroundColor =  arrToHex(corner_color.slice(0,3));
 		let brightness = 0.34 * corner_color[0] + 0.5 * corner_color[1] + 0.16 * corner_color[2];
-		console.log(brightness)
+
 		if (brightness < 128) document.getElementById("main_screen").style.color = "#FFFFFF";
 		else document.getElementById("main_screen").style.color = "#000000";
 		image_div.src = img.src;

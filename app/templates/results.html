@@ -6,75 +6,6 @@
   <title>Genomefltr</title>
   <link rel="stylesheet" href="{{url_for('static',filename='css/main.css')}}">
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-
-  <script>
-      const  colors = [
-        "#000000",
-        "#00FF00",
-        "#FF0000",
-        "#01FFFE",
-        "#FFA6FE",
-        "#FFDB66",
-        "#006401",
-        "#010067",
-        "#95003A",
-        "#007DB5",
-        "#FF00F6",
-        "#FFEEE8",
-        "#774D00",
-        "#90FB92",
-        "#0076FF",
-        "#D5FF00",
-        "#FF937E",
-        "#6A826C",
-        "#FF029D",
-        "#FE8900",
-        "#7A4782",
-        "#7E2DD2",
-        "#85A900",
-        "#FF0056",
-        "#A42400",
-        "#00AE7E",
-        "#683D3B",
-        "#BDC6FF",
-        "#263400",
-        "#BDD393",
-        "#00B917",
-        "#9E008E",
-        "#001544",
-        "#C28C9F",
-        "#FF74A3",
-        "#01D0FF",
-        "#004754",
-        "#E56FFE",
-        "#788231",
-        "#0E4CA1",
-        "#91D0CB",
-        "#BE9970",
-        "#968AE8",
-        "#BB8800",
-        "#43002C",
-        "#DEFF74",
-        "#00FFC6",
-        "#FFE502",
-        "#620E00",
-        "#008F9C",
-        "#98FF52",
-        "#7544B1",
-        "#B500FF",
-        "#00FF78",
-        "#FF6E41",
-        "#005F39",
-        "#6B6882",
-        "#5FAD4E",
-        "#A75740",
-        "#A5FFD2",
-        "#FFB167",
-        "#009BFF",
-        "#E85EBE"
-
-      ]
-  </script>
   <script src="https://cdn.jsdelivr.net/npm/danfojs@0.3.3/lib/bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.1/chart.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0/dist/chartjs-plugin-annotation.min.js"></script>
@@ -89,10 +20,10 @@
             <h1 class="text-8xl my-4">Sum stat placeholder</h1>
         </div>
         <div  class="flex flex-row items-center" >
-            <div class="border-2 mx-2" >
+            <div class="border-2 mx-2 shadow-lg" >
                 <canvas style="height: 480px; width: 640px" id="bar_chart" ></canvas>
             </div>
-            <div class="flex flex-col justify-between border-2 mx-2 px-2 py-2"   style="height: 480px;">
+            <div class="flex flex-col justify-between border-2 mx-2 px-2 py-2 shadow-lg"   style="height: 480px;">
                 <label class="
                 px-2
                 py-4
@@ -109,9 +40,15 @@
                 mx-3"
                 onclick="toggle_unclassified()">toggle unclassified</label  >
         
-                <div id="species_container" class="flex flex-col overflow-auto mx-3 border-2" style="height: 300px;"></div>
+                <div id="species_container" class="flex flex-col overflow-auto mx-3 px-1 border-2" style="height: 300px;">
+                    <div id="top_species_container" class="flex flex-col py-2 border-b-4">
+                    </div>
+
+                    <div id="other_species_container" class="flex flex-col my-2">
+                    </div>
+                </div>
             </div>
-            <div class="border-2 mx-2" >
+            <div class="border-2 mx-2 shadow-lg" >
                 <canvas style="height: 480px; width: 480px" id="pie_chart"> </canvas>
             </div>
         </div>
@@ -140,263 +77,9 @@
     </div>
 </div>
 </body>
-
-<script> 
-    
-    const species_container = document.getElementById("species_container");
-    
-    let new_index = []
-    let new_data = {}
-    const json_data = JSON.parse('{{ data|safe }}');
-    const json_summary_stats = JSON.parse('{{ summary_stats| tojson |safe }}');
-    console.log(json_summary_stats)
-    Object.entries(json_data).map(([key, val]) => {
-        new_data[key] = Object.values(val);
-        new_index = Object.keys(val);
-    })
-    new_index = new_index.map((item) => parseFloat(item))
-    df = new dfd.DataFrame(new_data, {index: new_index});
-    
-    //updates when pressing checkboxes
-    let species_list = df.columns.filter(item => item != "Unclasified")
-    let other_species_list = []
-
-    document.getElementById("species_list").value = [...species_list];
-
-    const species_colors = {};
-    species_list.forEach((item,idx) => {
-        species_colors[item] = colors[idx]
-    })
-    
-    //updates when moving the slider
-    let k_mer_threshold = 0.01
-
-    let show_unclassified = false;
-    let species_threshold = 5;
-
-    const update_k_mer_threshold = (new_val) => {
-        document.getElementById("k_mer_threshold").value = new_val;
-        k_mer_threshold = new_val;
-    }
-    update_k_mer_threshold(k_mer_threshold)
-
-    const update_species_threshold = (new_val) => {
-        species_threshold = new_val;
-    }
-    update_species_threshold(20)
-
-
-    const draw_species_pie_chart = (chart, species_list, k_mer_threshold) => {
-
-        sum_total = df.sum({axis: 1}).sum({axis: 0});
-        const threshold_list = df.index.filter(item => item >= k_mer_threshold)
-        // const temp_list = df.index.filter(item => item < k_mer_threshold)
-
-        sum_classified_df = df.loc({ rows: threshold_list, columns: species_list }).sum({axis: 1});
-
-        sum_unclassified = sum_total - sum_classified_df.sum({axis: 0});
-        colors_classified = species_list.map((item) => species_colors[item]);
-
-
-        sum_other_df = sum_classified_df.loc(sum_classified_df.lt(species_threshold)).sum()
-        sum_classified_df = sum_classified_df.loc(sum_classified_df.gt(species_threshold))
-
-
-        chart.data.labels = [...sum_classified_df.index, "other"]
-        show_unclassified ? chart.data.labels.push("unclassified") : null;
-
-        chart.data.datasets = [{
-            label: 'Classified',
-            data: [...sum_classified_df.values, sum_other_df],
-            hoverOffset: 4,
-            backgroundColor: [...colors_classified, "orange"]
-            }
-        ];
-        show_unclassified ? chart.data.datasets[0].data.push(sum_unclassified) : null;
-        show_unclassified ? chart.data.datasets[0].backgroundColor.push("blue") : null;
-
-
-        chart.options.borderRadius = 10
-        chart.options.radius = "75%"
-        chart.options.plugins.legend.display = false;
-
-        chart.update()
-    }
-
-    const draw_kmer_hist = (chart, pie_chart, species_list, new_k_mer_threshold) => {
-        update_k_mer_threshold(new_k_mer_threshold)
-        // console.log(species_list)
-        sum_total_df = df.sum({axis: 0});
-        const y_max = sum_total_df.max();
-        sum_classified_df = df.loc({ columns: species_list }).sum({axis: 0});
-        const classified_indexes = sum_classified_df.index
-        const classified_values = classified_indexes.map((index) => {
-            return index < k_mer_threshold ? 0 : sum_classified_df.loc([index]).values[0];
-        })
-        sum_classified_df = new dfd.Series(classified_values, { index: classified_indexes });
-        sum_unclassified_df = sum_total_df.sub(sum_classified_df)
-        const bins_x = sum_total_df.index
-        const classified_y = sum_classified_df.values
-        const unclassified_y = sum_unclassified_df.values
-
-
-        chart.data.labels = bins_x
-        chart.data.datasets = [
-            {
-                data: classified_y,
-                backgroundColor: "orange",
-                label: 'Classified'
-
-            }
-        ];
-        
-        show_unclassified ? chart.data.datasets.push({
-                data: unclassified_y,
-                backgroundColor: "blue",
-                label: 'Unclassified'
-            }) : null;
-
-
-        chart.options = {
-            onClick: (event) => { 
-
-                const xTop = chart.chartArea.left;
-                const xBottom = chart.chartArea.right;
-                const xMin = chart.scales.x.min;
-                const xMax = chart.scales.x.max;
-                let newX = 0;
-
-                if (event.x <= xBottom && event.x >= xTop) {
-                    newX = Math.abs((event.x - xTop) / (xBottom - xTop));
-                    newX = newX * (Math.abs(xMax - xMin)) + xMin;
-                };
-
-                draw_kmer_hist(chart, pie_chart, species_list, newX)
-                draw_species_pie_chart(pie_chart, species_list, newX)
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'classification by threshold k-mer',
-                    font: {
-                        size: 24
-                    }
-                },
-                annotation: {
-                    annotations: {
-                        line: {
-                            type: 'line',
-                            scaleID: 'x',
-                            value: parseFloat(k_mer_threshold),
-                            borderColor: 'rgb(255, 99, 132)',
-                            borderWidth: 2,
-                        }
-                    }
-                },
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    stacked: true,
-                    type: 'linear',
-                    min: 0.0,
-                    max: 1.0,
-                    offset: false,
-                    title: {
-                        display: true,
-                        text: 'Percent Threshold',
-                        font: {
-                            size: 16
-                        }
-                    }
-                },
-                y: {
-                    stacked: true,
-                    type: 'logarithmic',
-                    title: {
-                        display: true,
-                        text: 'Number of reads (log-scale)',
-                        font: {
-                            size: 16
-                        }
-                    }
-                }
-            }
-        };
-
-        chart.update()
-
-    }
-
-
-
-    Chart.register("chartjs-plugin-annotation");
-
-    bar_chart = new Chart('bar_chart', {
-            type: "bar",
-            data: {},
-            options: {
-                
-            }
-        }       
-    );
-
-    pie_chart = new Chart('pie_chart', {
-            type: "doughnut",
-            data: {},
-            options: {}
-        }       
-    );
-    // console.log(species_list)
-
-    draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold)
-    draw_species_pie_chart(pie_chart, species_list, k_mer_threshold)
-
-    species_list.map((item) => {
-        let toggle = document.createElement("label");
-        toggle.setAttribute("id", "toggle_" + item);
-        let checkbox = document.createElement("input");
-        checkbox.setAttribute("type", "checkbox");
-        checkbox.setAttribute("id", item);
-        checkbox.setAttribute("class", "h-5 w-5")
-        checkbox.setAttribute("checked", true);
-
-        checkbox.addEventListener("change", (change) => {
-            const item = change.target.id
-            if (species_list.includes(item)) {
-                item_index = species_list.indexOf(item);
-                species_list.splice(item_index, 1);
-                other_species_list.push(item)
-            } else {
-                species_list.push(item)
-                item_index = other_species_list.indexOf(item);
-                other_species_list.splice(item_index, 1);
-            }
-            species_list.sort()
-            other_species_list.sort()
-            //update the species_list to sent to backend
-            document.getElementById("species_list").value = [...species_list];
-            draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold);
-            draw_species_pie_chart(pie_chart ,species_list, k_mer_threshold);
-        })
-        toggle.appendChild(checkbox);
-        let label = document.createElement("span");
-        label.innerText = item;
-        toggle.appendChild(label);
-
-        species_container.appendChild(toggle);
-    })
-
-    const toggle_unclassified = () => {
-        show_unclassified = !show_unclassified;
-        draw_kmer_hist(bar_chart, pie_chart, species_list, k_mer_threshold)
-        draw_species_pie_chart(pie_chart, species_list, k_mer_threshold)
-    }
-
-    
+<script src="{{url_for('static',filename='js/colors.js')}}"></script>
+<script src="{{url_for('static',filename='js/results.js')}}"></script>
+<script>
+    initResultsScript('{{ data|safe }}');
 </script>
-
 </html>
