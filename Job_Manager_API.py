@@ -95,12 +95,6 @@ class Job_Manager_API:
                 return file2return
         logger.warning(f'process_id = {process_id} doen\'t have a result file')
         return None
-        
-    def get_running_process(self):
-        return self.__j_manager.get_running_process()
-
-    def get_waiting_process(self):
-        return self.__j_manager.get_waiting_process()
     
     def get_kraken_job_state(self, process_id):
         return self.__j_manager.get_kraken_job_state(process_id)

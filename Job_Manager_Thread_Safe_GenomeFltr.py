@@ -51,21 +51,15 @@ class Job_Manager_Thread_Safe_GenomeFltr:
         
     def get_postprocess_job_state(self, process_id):
         return self.__get_state(process_id, sc.POSTPROCESS_JOB_PREFIX)
-
-    def get_running_process(self):
-        return self.__job_manager.get_running_process()
-
-    def get_waiting_process(self):
-        return self.__job_manager.get_waiting_process()
-
+    
     def add_kraken_process(self, process_id: str, email_address):
         logger.info(f'process_id = {process_id}')
         self.__job_manager.add_process(process_id, sc.KRAKEN_JOB_PREFIX, email_address)
-
+    
     def add_postprocess(self, process_id: str, k_threshold, species_list):
         logger.info(f'process_id = {process_id}')
         self.__job_manager.add_process(process_id, sc.POSTPROCESS_JOB_PREFIX, k_threshold, species_list)
-
+    
     def get_job_state(self, process_id: str, job_prefix: str):
         logger.info(f'process_id = {process_id} job_prefix = {job_prefix}')
         return self.__job_manager.get_job_state(process_id, job_prefix)
