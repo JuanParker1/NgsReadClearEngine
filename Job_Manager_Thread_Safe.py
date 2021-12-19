@@ -65,7 +65,7 @@ class Job_Manager_Thread_Safe:
         # create listener on queue
         self.__listener = PbsListener(function_to_call_listener)
         self.__scheduler = BackgroundScheduler()
-        self.__scheduler.add_job(self.__listener.run, 'interval', seconds=5)
+        self.__scheduler.add_job(self.__listener.run, 'interval', seconds=sc.INTERVAL_BETWEEN_LISTENER_SAMPLES)
         self.__scheduler.start()
         
     def __save_processes_state_dict2file(self):
