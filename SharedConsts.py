@@ -56,7 +56,7 @@ KRAKEN_DB_NAME = "Bacteria"  # assuming the DB is in the same BASE folder as the
 KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id}_results.txt"
 
 # Kraken Job variables
-KRAKEN_JOB_QUEUE_NAME = 'lifesciweb'
+KRAKEN_JOB_QUEUE_NAME = 'itaym'
 POSTPROCESS_JOB_QUEUE_NAME = KRAKEN_JOB_QUEUE_NAME
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
 NUBMER_OF_CPUS_POSTPROCESS_JOB = '1'
@@ -124,9 +124,8 @@ cat "$original_classified_data" | seqkit grep -f "$output_pathTemp"  -o "$Temp_n
 # combine original unfiltered input with newly unclassified results
 cat "$Temp_new_unclassified_seqs" "$original_unclassified_data" > "$output_path"
 
-gzip "$output_path"
+gzip -f "$output_path"
 
-rm "$output_path"
 rm "$output_pathTemp"
 rm "$Temp_new_unclassified_seqs"
 '''
