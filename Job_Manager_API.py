@@ -23,7 +23,7 @@ class Job_Manager_API:
         try:
             send_email('mxout.tau.ac.il', 'TAU BioSequence <bioSequence@tauex.tau.ac.il>',
                        email_address, subject=f'{process_id} process_id {state}.',
-                       content=f'http://localhost:8000/process_state/{process_id}')
+                       content=f'Thanks, for using GenomeFLTR, you are the man / woman / non binary classification of your choice!\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us')
             logger.info(f'sent email to {email_address}')
         except:
             logger.exception(f'failed to sent email to {email_address}')

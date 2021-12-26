@@ -161,3 +161,7 @@ def upload_file():
             logger.info(f'file extention not allowed')
             return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED)
     return render_template('home.html')
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
