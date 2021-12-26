@@ -11,9 +11,11 @@ let df = "";
 const species_colors = {};
 const TOP_SPECIES = 10; // should be if df has more columns.
 let actual_top_species = 0; // will be set on first run.
+let non_contaminant_col_name = "";
 
-const initResultsScript = (data) => {
+const initResultsScript = (data, non_contaminant_col_name) => {
     const json_data = JSON.parse(data);
+    non_contaminant_col_name = non_contaminant_col_name;
     runResultsScript(json_data)
 };
 
@@ -51,7 +53,7 @@ const runResultsScript = (json_data) => {
     
     //updates when pressing checkboxes
     df.columns.forEach(item => update_species_list({id: item, checked: true}))
-    update_species_list({id:"unclassified (taxid 0)", checked: false});
+    update_species_list({id:non_contaminant_col_name, checked: false});
     actual_top_species = Math.min(df.columns.length-1, TOP_SPECIES)
     species_list.forEach((item,idx) => {
         species_colors[item] = colors[idx]
@@ -328,6 +330,6 @@ const toggle_unclassified = () => {
 const get_sorted_species = (df) => {
     let sort_index = df.sort_values({"ascending": false }).index
     let sorted_by_freq = df.iloc(sort_index).index
-    sorted_by_freq = sorted_by_freq.filter(item => item != "unclassified (taxid 0)")
+    sorted_by_freq = sorted_by_freq.filter(item => item != non_contaminant_col_name)
     return sorted_by_freq;
 }
