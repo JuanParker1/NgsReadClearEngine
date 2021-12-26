@@ -93,7 +93,7 @@ class Job_Manager_Thread_Safe:
         self.__mutex_processes_state_dict.acquire()
         for process_id in self.__processes_state_dict:
             for job_prefix in self.jobs_prefixes_lst:
-                if self.__processes_state_dict[process_id].get_job_state(job_prefix) == State.Running:
+                if self.__processes_state_dict[process_id].get_job_state(job_prefix) in [State.Running, State.Queue, State.Init]:
                     running_processes += 1
         self.__mutex_processes_state_dict.release()
         return running_processes
