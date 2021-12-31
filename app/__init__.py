@@ -126,40 +126,63 @@ def results(process_id):
     logger.info(f'process_id = {process_id}, df = {df}')
     return render_template('results.html', data=df.to_json(), summary_stats=summary_json)
 
+files_process_dict = {}
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        if 'file' not in request.files:
-            return redirect(request.url)
+        email_address = "edodotan@mail.tau.ac.il"
         file = request.files['file']
-        # If the user does not select a file, the browser submits an
-        # empty file without a filename.
-        if file.filename == '':
-            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_NO_FILE_UPLOADED)
-        if file and allowed_file(file.filename):
-            email_address = request.form.get('email', None)
-            if email_address == None:
-                logger.warning(f'email_address not available')
-                return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_INVALID_MAIL)
-            logger.info(f'file uploaded = {file}, email_address = {email_address}')
-            filename = secure_filename(file.filename)
+        filename = secure_filename(file.filename)
+        
+        current_chunk = int(request.form['dzchunkindex'])
+        if current_chunk == 0:
             new_process_id = manager.get_new_process_id()
             folder2save_file = os.path.join(app.config['UPLOAD_FOLDERS_ROOT_PATH'], new_process_id)
             os.mkdir(folder2save_file)
             if not filename.endswith('gz'): #zipped file
-                file.save(os.path.join(folder2save_file, USER_FILE_NAME))
+                save_path = os.path.join(folder2save_file, USER_FILE_NAME)
             else:
-                file.save(os.path.join(folder2save_file, USER_FILE_NAME + '.gz'))
-            logger.info(f'file saved = {file}')
-            man_results = manager.add_kraken_process(new_process_id, email_address)
-            if not man_results:
-                logger.warning(f'job_manager_api can\'t add process')
-                return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS)
-            logger.info(f'process added man_results = {man_results}, redirecting url')
-            return redirect(url_for('process_state', process_id=new_process_id))
+                save_path = os.path.join(folder2save_file, USER_FILE_NAME + '.gz')
+            files_process_dict[f'{request.remote_addr}{filename}'] = save_path
         else:
-            logger.info(f'file extention not allowed')
-            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED)
+            #TODO handle get exception
+            save_path = files_process_dict[f'{request.remote_addr}{filename}']
+        # If the file already exists it's ok if we are appending to it,
+        # but not if it's new file that would overwrite the existing one
+        if os.path.exists(save_path) and current_chunk == 0:
+            # 400 and 500s will tell dropzone that an error occurred and show an error
+            return render_template('error_page.html', error_text='problem uploading file')
+
+        try:
+            with open(save_path, 'ab') as f:
+                f.seek(int(request.form['dzchunkbyteoffset']))
+                f.write(file.stream.read())
+        except OSError:
+            # log.exception will include the traceback so we can see what's wrong 
+            logger.exception('Could not write to file')
+            return render_template('error_page.html', error_text='problem uploading file')
+
+        total_chunks = int(request.form['dztotalchunkcount'])
+
+        if current_chunk + 1 == total_chunks:
+            # This was the last chunk, the file should be complete and the size we expect
+            if os.path.getsize(save_path) != int(request.form['dztotalfilesize']):
+                logger.error(f"File {file.filename} was completed, "
+                          f"but has a size mismatch."
+                          f"Was {os.path.getsize(save_path)} but we"
+                          f" expected {request.form['dztotalfilesize']} ")
+                return render_template('error_page.html', error_text='problem uploading file')
+            else:
+                logger.info(f'File {file.filename} has been uploaded successfully to {save_path}')
+                man_results = manager.add_kraken_process(new_process_id, email_address)
+                if not man_results:
+                    logger.warning(f'job_manager_api can\'t add process')
+                    return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS)
+                logger.info(f'process added man_results = {man_results}, redirecting url')
+                return redirect(url_for('process_state', process_id=new_process_id))
+        else:
+            logger.debug(f'Chunk {current_chunk + 1} of {total_chunks} '
+                      f'for file {file.filename} complete')
     return render_template('home.html')
 
 @app.errorhandler(404)

@@ -22,6 +22,11 @@ logging_file_name = os.path.join('logs/', datetime.now().strftime('%Y_%m_%d_%H:%
 logging.basicConfig(filename = logging_file_name, level=logging.WARNING, format='%(asctime)s[%(levelname)s][%(filename)s][%(funcName)s]: %(message)s')
 logger = logging.getLogger('main')
 
+#formatter = logging.Formatter('%(message)s')
+#ch = logging.StreamHandler()
+#ch.setLevel(logging.DEBUG)
+#ch.setFormatter(formatter)
+#logger.addHandler(ch)
 
 class State(Enum):
     Running = 1
