@@ -126,8 +126,17 @@ def results(process_id):
     logger.info(f'process_id = {process_id}, df = {df}')
     return render_template('results.html', data=df.to_json(), summary_stats=summary_json)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    logger.info(request.files)
+    return render_template('home.html')
+
+@app.route('/display_error/<error_text>')
+def display_error(error_text):
+    return render_template('error_page.html', error_text=error_text)
+
+@app.route('/', methods=['GET', 'POST'])
+def home():
     if request.method == 'POST':
         if 'file' not in request.files:
             return redirect(request.url)
@@ -135,12 +144,12 @@ def upload_file():
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
         if file.filename == '':
-            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_NO_FILE_UPLOADED)
+            return redirect(url_for('display_error', error_text=UI_CONSTS.ALERT_USER_TEXT_NO_FILE_UPLOADED))
         if file and allowed_file(file.filename):
             email_address = request.form.get('email', None)
             if email_address == None:
                 logger.warning(f'email_address not available')
-                return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_INVALID_MAIL)
+                return redirect(url_for('display_error', error_text=UI_CONSTS.ALERT_USER_TEXT_INVALID_MAIL))
             logger.info(f'file uploaded = {file}, email_address = {email_address}')
             filename = secure_filename(file.filename)
             new_process_id = manager.get_new_process_id()
@@ -154,12 +163,12 @@ def upload_file():
             man_results = manager.add_kraken_process(new_process_id, email_address)
             if not man_results:
                 logger.warning(f'job_manager_api can\'t add process')
-                return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS)
+                return redirect(url_for('display_error', error_text=UI_CONSTS.ALERT_USER_TEXT_CANT_ADD_PROCESS))
             logger.info(f'process added man_results = {man_results}, redirecting url')
             return redirect(url_for('process_state', process_id=new_process_id))
         else:
             logger.info(f'file extention not allowed')
-            return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED)
+            return redirect(url_for('display_error', error_text=UI_CONSTS.ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED))
     return render_template('home.html')
 
 @app.errorhandler(404)
