@@ -8,7 +8,7 @@ from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, RESULTS_FOR_OUTPUT_CLAS
     DF_LOADER_CHUCK_SIZE, RESULTS_COLUMNS_TO_KEEP, RESULTS_FOR_OUTPUT_UNCLASSIFIED_RAW_FILE_NAME, \
     UNCLASSIFIED_COLUMN_NAME, RESULTS_SUMMARY_FILE_NAME, SUMMARY_RESULTS_COLUMN_NAMES, TEMP_CLASSIFIED_IDS, \
     TEMP_UNCLASSIFIED_IDS, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, KRAKEN_UNCLASSIFIED_COLUMN_NAME, \
-    RANK_KRAKEN_TRANSLATIONS
+    RANK_KRAKEN_TRANSLATIONS , UNCLASSIFIED_BACTERIA_NAME, UNCLASSIFIED_BACTERIA_ID
 import json
 import re
 import numpy as np
@@ -41,6 +41,9 @@ def get_NCBI_renaming_dict(summary_res_df):
     temp_naming_df['ncbi_taxonomyID'] = temp_naming_df['ncbi_taxonomyID'].astype(str)
     temp_naming_df['name'] = temp_naming_df['name'] + ' (taxid ' + temp_naming_df['ncbi_taxonomyID'] + ')'
     renaming_dict = temp_naming_df.set_index('ncbi_taxonomyID').to_dict()['name']
+    # add unclassified bacteria
+    assert UNCLASSIFIED_BACTERIA_ID not in renaming_dict.keys()
+    renaming_dict[UNCLASSIFIED_BACTERIA_ID] = UNCLASSIFIED_BACTERIA_NAME
     return renaming_dict
 
 
@@ -50,6 +53,8 @@ def calc_kmer_statistics(kmer_df):
     :param kmer_df: the mid processing k-mer data frame
     :return: kmer_df with a few more k-mer statistics columns
     """
+    # fix reads that have only high level k-mers matches like "Bacteria"
+    kmer_df['split'] = kmer_df['split'].apply(lambda x: x if len(x) > 0 else [(UNCLASSIFIED_BACTERIA_ID, 1)])
     # calculate sum of k mers
     kmer_df['total_k_mer_count'] = kmer_df['split'].apply(lambda x: sum([i[1] for i in x]))
     # calculate max species
@@ -130,8 +135,8 @@ def process_output(**kwargs):
     most_common_class = summary_res_for_UI_df.head(1)['name'].iloc[0] if number_of_classes > 0 else 'No contamination Found'
     summary_res_for_UI_dict = {'percent_of_contamination': percent_of_contamination, 'most_common_class_contamination':
         most_common_class, 'number_of_classes': number_of_classes}
-    with open(kraken_summary_results_For_UI_path, 'w') as jsp:
-        json.dump(summary_res_for_UI_dict, jsp)
+    # with open(kraken_summary_results_For_UI_path, 'w') as jsp:
+    #     json.dump(summary_res_for_UI_dict, jsp)
 
     # main processing loop
     for i, level in zip(range(len(regex_exps)), levels):
