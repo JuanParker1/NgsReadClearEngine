@@ -17,7 +17,7 @@ RANK_KRAKEN_TRANSLATIONS = {'U': 'Unclassified', 'R': 'Root', 'D': 'Domain', 'K'
                             'C': 'Class', 'O': 'Order', 'F': 'Family', 'G': 'Genus', 'S': 'Species'}
 
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
-    "/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")  # todo: replace this with real path
+    "/data/www/flask/fltr_backend/OutputProcessor.py")
 DF_LOADER_CHUCK_SIZE = 1e6
 RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'max_specie', 'classified_species', 'read_length', 'max_k_mer_p',
                            'all_classified_K_mers', 'split']
@@ -25,6 +25,8 @@ SUMMARY_RESULTS_COLUMN_NAMES = ['percentage_of_reads', 'number_of_reads_under', 
                                 'ncbi_taxonomyID', 'name']
 UNCLASSIFIED_COLUMN_NAME = 'Non Bacterial'
 KRAKEN_UNCLASSIFIED_COLUMN_NAME = 'unclassified (taxid 0)'
+UNCLASSIFIED_BACTERIA_NAME = 'Unclassified Bacteria'
+UNCLASSIFIED_BACTERIA_ID = '-1'
 
 # PBS Listener consts
 JOB_NUMBER_COL = 'job_number'
@@ -75,8 +77,8 @@ KRAKEN_JOB_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
-conda activate
+#source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate NGScleaner
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
 
@@ -102,8 +104,8 @@ POST_PROCESS_COMMAND_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
-conda activate
+#source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate NGScleaner
 
 sleep {sleep_interval}
 
