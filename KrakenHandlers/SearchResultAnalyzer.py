@@ -26,7 +26,7 @@ def run_post_process(root_folder, classification_threshold, species_to_filter_on
     fasta_output_file, ext = os.path.splitext(str(FINAL_OUTPUT_FILE_NAME))
     path_to_final_result_file = os.path.join(root_folder, fasta_output_file)
     #
-    species_to_filter_on_string = str(species_to_filter_on).strip('[]').replace('\'', "")
+    species_to_filter_on_string = str(species_to_filter_on).strip('[]').replace('\'', "").replace(', ',',')
     job_unique_id = str(pathlib.Path(root_folder).stem)
     job_name = f'{POSTPROCESS_JOB_PREFIX}_{job_unique_id}'
     job_logs_path = str(root_folder) + '/'
