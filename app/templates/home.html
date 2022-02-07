@@ -38,8 +38,8 @@
           " onclick="buttonClick()">
           <span class="mt-2 text-base leading-normal select-none animate-bounce ">Submit Job</span>
         </div>
-        <form class="h-48 my-8 flex flex-col justify-end items-center opacity-0 transition-opacity duration-1000 ease-in-out absolute bottom-0 left-0 invisible" id="job_form" method=post enctype=multipart/form-data>
-          <input class="appearance-none border-2 border-blue-400 bg-white rounded-lg w-128 text-gray-700 text-xl mr-1 py-3 px-2 leading-tight focus:outline-none text-center" type="email" id="email" name="email" placeholder="Enter A valid email Adress" required>
+        <form class="h-48 my-8 flex flex-col justify-end items-center opacity-0 transition-opacity duration-1000 ease-in-out absolute bottom-0 left-0 invisible" id="theForm" method="POST" enctype="multipart/form-data">
+          <input class="appearance-none border-2 border-blue-400 bg-white rounded-lg w-128 text-gray-700 text-xl mr-1 py-3 px-2 leading-tight focus:outline-none text-center" type="email" id="theMail" name="email" placeholder="Enter A valid email Adress" required>
           <label
             id="button_label"
             class="
@@ -64,7 +64,7 @@
               my-4
             ">
             <span class="mt-2 text-base leading-normal select-none ">Submit  File</span>
-            <input id="file_input" type="file" name=file class="hidden" disabled/>
+            <input id="theFile" type="file" name=file class="hidden" disabled/>
           </label>
         </form>
         <div id="after_post" class="hidden flex flex-row h-48 my-8 justify-end items-center">

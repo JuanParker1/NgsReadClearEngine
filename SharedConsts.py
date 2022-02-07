@@ -16,8 +16,7 @@ KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME = Path('summary_stat_UI.json')
 RANK_KRAKEN_TRANSLATIONS = {'U': 'Unclassified', 'R': 'Root', 'D': 'Domain', 'K': 'Kingdom', 'P': 'Phylum',
                             'C': 'Class', 'O': 'Order', 'F': 'Family', 'G': 'Genus', 'S': 'Species'}
 
-PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path(
-    "/data/www/flask/fltr_backend/OutputProcessor.py")
+PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path("/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")
 DF_LOADER_CHUCK_SIZE = 1e6
 RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'max_specie', 'classified_species', 'read_length', 'max_k_mer_p',
                            'all_classified_K_mers', 'split']
@@ -77,7 +76,7 @@ KRAKEN_JOB_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-#source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+source /powerapps/share/miniconda3-4.7.12/etc/profile.d/conda.sh
 conda activate NGScleaner
 cd {kraken_base_folder}
 PYTHONPATH=$(pwd)
@@ -104,7 +103,7 @@ POST_PROCESS_COMMAND_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-#source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+source /powerapps/share/miniconda3-4.7.12/etc/profile.d/conda.sh
 conda activate NGScleaner
 
 sleep {sleep_interval}

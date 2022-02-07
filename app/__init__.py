@@ -96,7 +96,7 @@ def post_process_state(process_id):
     if job_state == None:
         return render_template('error_page.html', error_text=UI_CONSTS.ALERT_USER_TEXT_UNKNOWN_PROCESS_ID)
     if job_state != State.Finished:
-        return render_template('post_process.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
+        return render_template('process_running.html', process_id=process_id, text=UI_CONSTS.states_text_dict[job_state], gif=UI_CONSTS.states_gifs_dict[job_state])
     else:
         return redirect(url_for('download_file', process_id=process_id))
 
