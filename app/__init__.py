@@ -77,9 +77,9 @@ def process_state(process_id):
     if job_state != State.Finished:
         kwargs = {
             "process_id": process_id,
-            "text": UI_CONSTS.states_text_dict[State.Running],
+            "text": UI_CONSTS.states_text_dict[job_state],
             "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
-            "gif": UI_CONSTS.states_gifs_dict[State.Running],
+            "gif": UI_CONSTS.states_gifs_dict[job_state],
         }
         return render_template('process_running.html', **kwargs)
     else:
