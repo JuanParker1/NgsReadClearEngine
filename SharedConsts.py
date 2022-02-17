@@ -144,14 +144,29 @@ class UI_CONSTS:
     static_folder_path = 'gifs/'
     states_gifs_dict = {
         State.Running: {
+            "background": "#9db09f",
+            "gif_id": "aiqIqtW2utnkk"
+        },
+        State.Finished: {
             "background": "#1674d2",
             "gif_id": "TvLuZ00OIADoQ"
-        },#os.path.join(static_folder_path, "loading4.gif"),
-        State.Finished: os.path.join(static_folder_path, "loading2.gif"), #TODO is needed??
-        State.Crashed: "crashed", #TODO finish
-        State.Waiting: os.path.join(static_folder_path, "loading1.gif"),
-        State.Init: os.path.join(static_folder_path, "loading3.gif"),
-        State.Queue: os.path.join(static_folder_path, "loading2.gif"),
+        },
+        State.Crashed: {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
+        State.Waiting:  {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
+        State.Init:  {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
+        State.Queue:  {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
     }
     
     states_text_dict = {
