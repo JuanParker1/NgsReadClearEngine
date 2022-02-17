@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from utils import State
+from enum import Enum
 
 # OUTPUT consts
 K_MER_COUNTER_MATRIX_FILE_NAME = Path('CounterMatrixForUI.csv')
@@ -131,15 +132,41 @@ rm "$output_pathTemp"
 rm "$Temp_new_unclassified_seqs"
 '''
 
+class EMAIL_CONSTS:
+    FINISHED_TITLE = f'Genomefltr - Job finished'
+    FINISHED_CONTENT = '''Thanks, for using GenomeFLTR\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us'''
+    CRASHED_TITLE = f'Genomefltr - Job crashed'
+    CRASHED_CONTENT = '''Thanks, for using GenomeFLTR\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us'''
+
+
+
 class UI_CONSTS:
     static_folder_path = 'gifs/'
     states_gifs_dict = {
-        State.Running: os.path.join(static_folder_path, "loading4.gif"),
-        State.Finished: os.path.join(static_folder_path, "loading2.gif"), #TODO is needed??
-        State.Crashed: "crashed", #TODO finish
-        State.Waiting: os.path.join(static_folder_path, "loading1.gif"),
-        State.Init: os.path.join(static_folder_path, "loading3.gif"),
-        State.Queue: os.path.join(static_folder_path, "loading2.gif"),
+        State.Running: {
+            "background": "#9db09f",
+            "gif_id": "aiqIqtW2utnkk"
+        },
+        State.Finished: {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
+        State.Crashed: {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
+        State.Waiting:  {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
+        State.Init:  {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
+        State.Queue:  {
+            "background": "#1674d2",
+            "gif_id": "TvLuZ00OIADoQ"
+        },
     }
     
     states_text_dict = {
@@ -151,15 +178,20 @@ class UI_CONSTS:
         State.Queue: "Job is queued",
     }
     
+    global allowed_files_str
     ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
     allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
 
-    ALERT_USER_TEXT_UNKNOWN_PROCESS_ID = 'unknown process'
-    ALERT_USER_TEXT_INVALID_EXPORT_PARAMS = 'invalid paramters for export'
-    ALERT_USER_TEXT_POSTPROCESS_CRASH = 'can\'t postprocess'
-    ALERT_USER_TEXT_NO_FILE_UPLOADED = 'insert file'
-    ALERT_USER_TEXT_INVALID_MAIL = 'invalid mail'
-    ALERT_USER_TEXT_CANT_ADD_PROCESS = 'can\'t add search process'
-    ALERT_USER_TEXT_FILE_EXTENSION_NOT_ALLOWED = f'invalid file extenstion, please use one of the following: {allowed_files_str}'
-    ALERT_USER_TEXT_EXPORT_FILE_UNAVAILABLE = f'failed to export file, try to rerun the file'
 
+    class UI_Errors(Enum):
+        UNKNOWN_PROCESS_ID = 'The provided process id does not exist'
+        INVALID_EXPORT_PARAMS ='invalid paramters for export'
+        POSTPROCESS_CRASH = 'can\'t postprocess'
+        INVALID_MAIL = 'invalid mail'
+        CANT_ADD_PROCESS = 'can\'t add search process'
+        INVALID_FILE = f'invalid file or file extenstion, please use a valid: {allowed_files_str} file'
+        EXPORT_FILE_UNAVAILABLE = f'failed to export file, try to rerun the file'
+        PAGE_NOT_FOUND = 'The requested page does not exist'
+
+    PROCESS_INFO_PP = "We are processing your request, This may take several minutes. You may close this window, An email will be sent upon completion"
+    PROCESS_INFO_KR = "We are processing your request, This may take several minutes for small files and several hours for larger ones. Please close this window, An email will be sent upon completion"
