@@ -6,7 +6,8 @@ import pandas as pd
 from InputValidator import InputValidator
 from Job_Manager_Thread_Safe_GenomeFltr import Job_Manager_Thread_Safe_GenomeFltr
 from utils import send_email, State, logger, LOGGER_LEVEL_JOB_MANAGE_API
-from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, FINAL_OUTPUT_FILE_NAME, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME
+from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, \
+    FINAL_OUTPUT_FILE_NAME, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, EMAIL_CONSTS
 logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_API)
 
 
@@ -19,11 +20,11 @@ class Job_Manager_API:
         self.input_validator = InputValidator()
         self.__func2update_html = func2update_html
 
-    def __build_and_send_mail(self, process_id, state, email_address):
+    def __build_and_send_mail(self, process_id, subject, content, email_address):
         try:
             send_email('mxout.tau.ac.il', 'TAU BioSequence <bioSequence@tauex.tau.ac.il>',
-                       email_address, subject=f'{process_id} process_id {state}.',
-                       content=f'Thanks, for using GenomeFLTR, you are the man / woman / non binary classification of your choice!\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us')
+                       email_address, subject=subject,
+                       content= content)
             logger.info(f'sent email to {email_address}')
         except:
             logger.exception(f'failed to sent email to {email_address}')
@@ -31,9 +32,10 @@ class Job_Manager_API:
     def __process_state_changed(self, process_id, state, email_address):
         if state == State.Finished:
             if email_address != None:
-                self.__build_and_send_mail(process_id, state, email_address)
-        #elif state == State.Crashed:
-            #self.__build_and_send_mail(process_id, state, 'elya.wygoda@gmail.com')
+                self.__build_and_send_mail(process_id, EMAIL_CONSTS.FINISHED_TITLE, EMAIL_CONSTS.FINISHED_CONTENT.format(process_id=process_id), email_address)
+        elif state == State.Crashed:
+            if email_address != None:
+                self.__build_and_send_mail(process_id, EMAIL_CONSTS.CRASHED_TITLE, EMAIL_CONSTS.CRASHED_CONTENT.format(process_id=process_id), email_address)
         self.__func2update_html(process_id, state)
 
     def __delete_folder(self, process_id):
