@@ -13,6 +13,7 @@ import json
 import re
 import numpy as np
 
+
 def parse_kmer_data(kraken_raw_output_df):
     """
     parses the k mer column in the kraken output into a list of pairs (species of k-mer, number of matched k-mers)
@@ -57,6 +58,11 @@ def calc_kmer_statistics(kmer_df):
     kmer_df['split'] = kmer_df['split'].apply(lambda x: x if len(x) > 0 else [(UNCLASSIFIED_BACTERIA_ID, 1)])
     # calculate sum of k mers
     kmer_df['total_k_mer_count'] = kmer_df['split'].apply(lambda x: sum([i[1] for i in x]))
+    # remove unclassified classification
+    kmer_df['split'] = kmer_df['split'].apply(lambda x: [a for a in x if a[0] != '0'])
+    kmer_df.loc[kmer_df['is_classified'] == 'U', 'split'] = kmer_df.loc[kmer_df['is_classified'] == 'U',:].apply(lambda x: [('0', x['total_k_mer_count'])], axis=1)
+    kmer_df['is_empty'] = kmer_df['split'].astype(bool)
+    kmer_df.loc[kmer_df['is_empty'] == False, 'split'] = kmer_df.loc[kmer_df['is_empty'] == False, :].apply(lambda x: [('-1', x['total_k_mer_count'])], axis=1)
     # calculate max species
     kmer_df['max_specie'] = kmer_df['split'].apply(lambda x: max(x, key=itemgetter(1))[0])
     # calculate k-mers
@@ -135,8 +141,8 @@ def process_output(**kwargs):
     most_common_class = summary_res_for_UI_df.head(1)['name'].iloc[0] if number_of_classes > 0 else 'No contamination Found'
     summary_res_for_UI_dict = {'percent_of_contamination': percent_of_contamination, 'most_common_class_contamination':
         most_common_class, 'number_of_classes': number_of_classes}
-    # with open(kraken_summary_results_For_UI_path, 'w') as jsp:
-    #     json.dump(summary_res_for_UI_dict, jsp)
+    with open(kraken_summary_results_For_UI_path, 'w') as jsp:
+        json.dump(summary_res_for_UI_dict, jsp)
 
     # main processing loop
     for i, level in zip(range(len(regex_exps)), levels):
