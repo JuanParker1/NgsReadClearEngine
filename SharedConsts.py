@@ -54,7 +54,8 @@ INTERVAL_BETWEEN_LISTENER_SAMPLES = 5  # in seconds
 CODE_BASE_PATH = Path("/groups/pupko/alburquerque/NgsReadClearEngine/")
 BASE_PATH_TO_KRAKEN_SCRIPT = Path("/groups/pupko/alburquerque/Kraken/")
 KRAKEN_SEARCH_SCRIPT_COMMAND = str(BASE_PATH_TO_KRAKEN_SCRIPT) + "/kraken2"
-KRAKEN_DB_NAME = "Bacteria"  # assuming the DB is in the same BASE folder as the kraken script
+# assuming the DB is in the same BASE folder as the kraken script
+KRAKEN_DB_NAMES = ["Bacteria", 'plant', 'human', 'fungi', 'protozoa', 'UniVec', 'plasmid', 'archaea', 'Viral', 'Kraken Standard']
 KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id}_results.txt"
 
 # Kraken Job variables
