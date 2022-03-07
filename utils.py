@@ -17,9 +17,9 @@ def init_dir_path():
         path2change = SERVER_DIR
     os.chdir(path2change)
 
-init_dir_path()
-logging_file_name = os.path.join('logs/', datetime.now().strftime('%Y_%m_%d_%H:%M.log'))
-logging.basicConfig(filename = logging_file_name, level=logging.WARNING, format='%(asctime)s[%(levelname)s][%(filename)s][%(funcName)s]: %(message)s')
+# init_dir_path()
+# logging_file_name = os.path.join('logs/', datetime.now().strftime('%Y_%m_%d_%H:%M.log'))
+# logging.basicConfig(filename = logging_file_name, level=logging.WARNING, format='%(asctime)s[%(levelname)s][%(filename)s][%(funcName)s]: %(message)s')
 logger = logging.getLogger('main')
 
 

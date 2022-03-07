@@ -49,51 +49,11 @@ WEIRD_BEHAVIOR_JOB_TO_CHECK = ''
 PATH2SAVE_PROCESS_DICT = r'SavedObjects/processes.dict'
 INTERVAL_BETWEEN_LISTENER_SAMPLES = 5  # in seconds
 
-# Kraken Variables
-# todo replace all paths
-CODE_BASE_PATH = Path("/groups/pupko/alburquerque/NgsReadClearEngine/")
-BASE_PATH_TO_KRAKEN_SCRIPT = Path("/groups/pupko/alburquerque/Kraken/")
-KRAKEN_SEARCH_SCRIPT_COMMAND = str(BASE_PATH_TO_KRAKEN_SCRIPT) + "/kraken2"
-# assuming the DB is in the same BASE folder as the kraken script
-KRAKEN_DB_NAMES = ["Bacteria", 'plant', 'human', 'fungi', 'protozoa', 'UniVec', 'plasmid', 'archaea', 'Viral', 'Kraken Standard']
-KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id}_results.txt"
-
-# Kraken Job variables
-KRAKEN_JOB_QUEUE_NAME = 'itaym'
-POSTPROCESS_JOB_QUEUE_NAME = KRAKEN_JOB_QUEUE_NAME
-NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
-NUBMER_OF_CPUS_POSTPROCESS_JOB = '1'
-KRAKEN_JOB_PREFIX = 'KR'
-POSTPROCESS_JOB_PREFIX = 'PP'
-# todo: replace the conda env
-KRAKEN_JOB_TEMPLATE = '''
-#!/bin/bash
-
-#PBS -S /bin/bash
-#PBS -r y
-#PBS -q {queue_name}
-#PBS -l ncpus={cpu_number}
-#PBS -v PBS_O_SHELL=bash,PBS_ENVIRONMENT=PBS_BATCH
-#PBS -N {job_name}
-#PBS -e {error_files_path}
-#PBS -o {output_files_path}
-
-source /powerapps/share/miniconda3-4.7.12/etc/profile.d/conda.sh
-conda activate NGScleaner
-cd {kraken_base_folder}
-PYTHONPATH=$(pwd)
-
-sleep {sleep_interval}
-
-{kraken_command} --db "{db_path}" "{query_path}" --output "{kraken_results_path}" --threads 20 --use-names --report {report_file_path} {additional_parameters}
-python {path_to_output_processor} --outputFilePath "{kraken_results_path}"
-cat {query_path} | seqkit grep -f {classified_ids_list}  -o {classified_ids_results}
-cat {query_path} | seqkit grep -f {unclassified_ids_list}  -o {unclassified_ids_results}
-rm {query_path}
-'''
 
 # post processing
-
+POSTPROCESS_JOB_PREFIX = 'PP'
+POSTPROCESS_JOB_QUEUE_NAME = 'itaym'
+NUBMER_OF_CPUS_POSTPROCESS_JOB = '1'
 POST_PROCESS_COMMAND_TEMPLATE = '''
 #!/bin/bash          
 #PBS -S /bin/bash
@@ -179,7 +139,7 @@ class UI_CONSTS:
         State.Queue: "Job is queued",
     }
     
-    global allowed_files_str
+    global allowed_files_str  # todo: Edo, do we have to use a global var?
     ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
     allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
 
