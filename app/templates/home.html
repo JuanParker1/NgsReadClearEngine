@@ -1,18 +1,19 @@
 {% extends 'base.html' %}
 
 
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+{% endblock %}
 
 {% block body %}
-<div class='w-full h-screen bg-no-repeat bg-cover' 
-       style="background-image: url('static/images/background.jpg')">
 
 
     <div class="flex flex-col mx-auto  h-full justify-center items-center">
-        <div>
+        <div class="flex-0 h-64 my-8">
             <h1 class="text-9xl text-center text-white select-none my-5 ">Genomefltr</h1>
             <h1 class="text-8xl text-white select-none">Read Filtration Made Easy.</h1>
         </div>
-        <div class="h-48 my-8 flex flex-col justify-end opacity-100 transition-opacity duration-1000 ease-in-out" id="job_button">
+        <div class="h-32 flex flex-col justify-end opacity-100 transition-opacity duration-1000 ease-in-out" id="job_button">
           <label
             class="
               w-64
@@ -38,41 +39,39 @@
           " onclick="buttonClick()">
           <span class="mt-2 text-base leading-normal select-none animate-bounce ">Submit Job</span>
         </div>
-        <form class="h-48 my-8 flex flex-col justify-end items-center opacity-0 transition-opacity duration-1000 ease-in-out absolute bottom-0 left-0 invisible" id="theForm" method="POST" enctype="multipart/form-data">
-          <input class="appearance-none border-2 border-blue-400 bg-white rounded-lg w-128 text-gray-700 text-xl mr-1 py-3 px-2 leading-tight focus:outline-none text-center" type="email" id="theMail" name="email" placeholder="Enter a valid email address" required>
-          <label
-            id="button_label"
-            class="
-              w-64
-              flex flex-col
-              items-center
-              rounded-full
-              px-4
-              py-6
-              bg-white
-              rounded-md
-              shadow-md
-              tracking-wide
-              uppercase
-              border border-blue
-              bg-gray-600
-              text-white
-              ease-linear
-              transition-all
-              duration-150
-              mx-8
-              my-4
-            ">
-            <span class="mt-2 text-base leading-normal select-none ">Submit  File</span>
-            <input id="theFile" type="file" name=file class="hidden" disabled/>
-          </label>
-        </form>
+        <div id="formdiv" class="h-32 border-2 border-white-400 bg-white rounded-lg opacity-0 transition-opacity duration-1000 ease-in-out absolute bottom-0 left-0 invisible">
+
+          <form class="h-32 flex flex-col justify-center" id="theForm" method="POST" enctype="multipart/form-data">
+            <div id="mail_div"  class="flex flex-row justify-between items-center">
+              <p class="text-2xl mx-8">Enter a valid email address:</p>
+              <input class="appearance-none border-2 border-blue-700 bg-white rounded-lg w-128 text-gray-700 text-xl mr-1 py-3 px-2 leading-tight focus:outline-none text-center" type="email" id="theMail" name="email" placeholder="example@example.com" required>
+              <label for="theMail" id="continue_after_mail" class="w-16  flex flex-col items-center rounded-full py-3 bg-white shadow-lg tracking-wide uppercase border border-blue-700 bg-gray-600 text-white ease-linear transition-all duration-150 mx-8 my-4">
+                <span class="text-base  text-2xl leading-normal select-none ">➔</span>
+              </label>
+            </div>
+            <div id="file_div" class="hidden flex flex-row justify-center items-center ">
+              <p class="text-2xl mx-8">Select a valid reads file:</p>
+              <label for="theFile" id="upload_button" class="w-64  flex flex-col  items-center  px-4  py-6  bg-white  rounded-md  shadow-lg  tracking-wide  uppercase  border border-blue-700  bg-gray-600  text-white  ease-linear  transition-all  duration-150  mx-8  my-4">
+                <span class="select-none"><i class="fa fa-upload" style="font-size:24px"></i></span>
+                <input class="hidden" id="theFile" type="file" name=file/>
+              </label>
+            </div>
+            <div id="database_div" class="hidden">
+              {% for group in databases %}
+                <input id="temp" type="radio" name=db value="temp"/>
+                <label for="temp">temp</label>
+
+              {% endfor %}
+            </div>
+          </form>
+        </div>
         <div id="after_post" class="hidden flex flex-row h-48 my-8 justify-end items-center">
           <h1 id="progress-bar" class="text-center text-white animate-pulse text-4xl select-none"></h1>
         </div>
         <a class="underline text-2xl text-white py-6" href="/about">About</a>
     </div>
-  </div>
-</body>
+{% endblock %}
+  
+{% block scripts %}
 <script src="{{url_for('static',filename='js/home.js')}}"></script>
 {% endblock %}
