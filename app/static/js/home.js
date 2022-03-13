@@ -1,3 +1,10 @@
+let MAX_CUSTOM_SPECIES = 1;
+
+function initScript(max_custom){
+  MAX_CUSTOM_SPECIES = max_custom;
+}
+
+
 const job_form = document.getElementById("theForm")
 const buttonClick = () => {
   const form_div = document.getElementById("formdiv")
@@ -54,8 +61,6 @@ const buttonClick = () => {
       document.getElementById("file_div").classList.add("hidden");
       document.getElementById("database_div").classList.remove("hidden");
     }
-    console.log(job_form)
-
   }
 
 
@@ -75,16 +80,14 @@ const buttonClick = () => {
   }
 
 
-
-
-
-
   function postForm() {
-    let formdata = new FormData();
+    console.log(document.getElementById("theForm"))
+    let formdata = new FormData(document.getElementById("theForm"));
 
-    formdata.append('file', document.getElementById("theFile").files[0]);
-    formdata.append('email', document.getElementById("theMail").value);
-
+    // formdata.append('file', document.getElementById("theFile").files[0]);
+    // formdata.append('email', document.getElementById("theMail").value);
+    // formdata.append('radio', document.getElementById("theMail").value);
+    
     let request = new XMLHttpRequest();
 
     request.upload.addEventListener('progress', (event) => {
@@ -120,6 +123,26 @@ const buttonClick = () => {
 
 }
 
+const customDBSelector = (event) => {
+  const db_options = document.getElementById("DB_options");
+  db_options.replaceChildren()
+
+  for (let i = 0; i < MAX_CUSTOM_SPECIES; i++) {
+    let input = document.createElement("input");
+    input.setAttribute("type", "text");
+    input.setAttribute("name", "species" + i);
+    input.setAttribute("pattern", "[A-Za-z]{0,4}[0-9]{0,10}")
+    input.setAttribute("placeholder", "text");
+    input.classList = ["text-center"]
+
+    // Runs 5 times, with values of step 0 through 4.
+    db_options.appendChild(input)
+  }
+}
+
 
 theFile.addEventListener('change', formForward);
 theFile.value = null
+
+document.getElementById("custom_button").addEventListener("click", customDBSelector)
+document.getElementById("submit_button").addEventListener("click", postForm)

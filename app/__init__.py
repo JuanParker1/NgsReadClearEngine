@@ -2,6 +2,7 @@ from flask import Flask, flash, request, redirect, url_for, render_template, Res
 from werkzeug.utils import secure_filename
 from Job_Manager_API import Job_Manager_API
 from SharedConsts import UI_CONSTS
+from KrakenHandlers.KrakenConsts import KRAKEN_DB_NAMES,  KRAKEN_MAX_CUSTOM_SPECIES
 from utils import State, logger
 import os
 import warnings
@@ -138,11 +139,6 @@ def results(process_id):
     logger.info(f'process_id = {process_id}, df = {df}')
     return render_template('results.html', data=df.to_json(), summary_stats=summary_json)
 
-@app.route('/upload', methods=['GET', 'POST'])
-def upload_file():
-    logger.info(request.files)
-    return render_template('home.html')
-
 @app.route('/error/<error_type>')
 def error(error_type):
     # checking if error_type exists in error enum
@@ -185,7 +181,7 @@ def home():
         else:
             logger.info(f'file extention not allowed')
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
-    return render_template('home.html')
+    return render_template('home.html', databases=KRAKEN_DB_NAMES, max_custom=KRAKEN_MAX_CUSTOM_SPECIES)
 
 @app.errorhandler(404)
 def page_not_found(e):
