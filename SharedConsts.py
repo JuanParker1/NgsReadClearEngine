@@ -106,8 +106,8 @@ class UI_CONSTS:
     static_folder_path = 'gifs/'
     states_gifs_dict = {
         State.Running: {
-            "background": "#9db09f",
-            "gif_id": "aiqIqtW2utnkk"
+            "background": "#ffffff",
+            "gif_id": "D5GyCFkInbJlu"
         },
         State.Finished: {
             "background": "#1674d2",
@@ -130,6 +130,7 @@ class UI_CONSTS:
             "gif_id": "TvLuZ00OIADoQ"
         },
     }
+
     
     states_text_dict = {
         State.Running: "Your process is running",

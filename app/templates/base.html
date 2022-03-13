@@ -8,11 +8,15 @@
   <link rel="icon" type="image/x-icon" href="{{url_for('static',filename='images/dna.svg')}}">
   <!-- <link rel="stylesheet" href="{{url_for('static',filename='css/main.css')}}"> -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
-
+  {% block head %}{% endblock %}
 </head>
 
 <body class="font-sans h-full">
-    {% block body %}{% endblock %}
-</body>
+  <div class='w-full h-screen bg-no-repeat bg-cover' 
+       style="background-image: url({{url_for('static',filename='images/background.jpg')}})">
 
+    {% block body %}{% endblock %}
+  </div>
+</body>
+  {% block scripts %}{% endblock %}
 </html>

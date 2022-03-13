@@ -2,3 +2,5 @@
 __pycache__
 *.pyc
 .vscode/settings.json
+app/__init__true.py
+app/__init__ui.py
