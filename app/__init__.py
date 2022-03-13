@@ -1,9 +1,11 @@
 from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify, send_file
 from werkzeug.utils import secure_filename
-from Job_Manager_API import Job_Manager_API
 from SharedConsts import UI_CONSTS
-from utils import State, logger
+from KrakenHandlers.KrakenConsts import KRAKEN_DB_NAMES, KRAKEN_MAX_CUSTOM_SPECIES
+from utils import State
+import pandas as pd
 import os
+import json
 import warnings
 import time
 
@@ -24,15 +26,12 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 * 1000 # MAX file size to up
 process_id2update = []
 
 def update_html(process_id, state):
-    logger.info(f'process_id = {process_id} state = {state}')
     if process_id:
         process_id2update.append(process_id)
 
 @app.route('/remove_update/<process_id>')
 def remove_update(process_id):
-    logger.info(f'process_id = {process_id}')
     if process_id in process_id2update:
-        logger.info(f'removing {process_id} from process_id2update')
         process_id2update.remove(process_id)
     return jsonify('data')
 
@@ -54,32 +53,29 @@ def stream():
 
                 max_broadcasting_event = max(requests_time_dict, key=requests_time_dict.get)
                 if requests_time_dict[max_broadcasting_event] >= TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC:
-                    logger.info(f'removing max_broadcasting_event = {process_id} as it reached the max amount of time broadcasting')
                     requests_time_dict.pop(max_broadcasting_event)
             else:
                 requests_time_dict.clear()
                 time.sleep(1)
     return Response(eventStream(), mimetype="text/event-stream")
 
-manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FILE_NAME, update_html)
 
 
 def allowed_file(filename):
-    logger.debug(f'filename = {filename}')
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in UI_CONSTS.ALLOWED_EXTENSIONS
 
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
-    job_state = manager.get_kraken_job_state(process_id)
+    job_state = 0
     if job_state == None:
         return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.UNKNOWN_PROCESS_ID.name))
     if job_state != State.Finished:
         kwargs = {
             "process_id": process_id,
-            "text": UI_CONSTS.states_text_dict[job_state],
+            "text": UI_CONSTS.states_text_dict[State.Running],
             "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
-            "gif": UI_CONSTS.states_gifs_dict[job_state],
+            "gif": UI_CONSTS.states_gifs_dict[State.Running],
         }
         return render_template('process_running.html', **kwargs)
     else:
@@ -88,17 +84,15 @@ def process_state(process_id):
 @app.route('/download_file/<process_id>', methods=['GET', 'POST'])
 def download_file(process_id):
     if request.method == 'POST':
-        file2send = manager.export_file(process_id)
+        file2send = None#manager.export_file(process_id)
         if file2send == None:
-            logger.warning(f'failed to export file exporting, process_id = {process_id}, file2send = {file2send}')
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.EXPORT_FILE_UNAVAILABLE.name))
-        logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
         return send_file(file2send, mimetype='application/octet-stream')
     return render_template('export_file.html')
 
 @app.route('/post_process_state/<process_id>')
 def post_process_state(process_id):
-    job_state = manager.get_postprocess_job_state(process_id)
+    job_state = 0
     if job_state == None:
         return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.UNKNOWN_PROCESS_ID.name))
     if job_state != State.Finished:
@@ -120,28 +114,15 @@ def results(process_id):
         try:
             species_list, k_threshold = data['species_list'].split(','), float(data['k_mer_threshold'])
         except Exception as e:
-            logger.error(f'{e}')
             #TODO what about the df??
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_EXPORT_PARAMS.name))
-        logger.info(f'exporting, process_id = {process_id}, k_threshold = {k_threshold}, species_list = {species_list}')
-        man_results = manager.add_postprocess(process_id, species_list, k_threshold)
-        if man_results == None:
-            #TODO what about the df??
-            return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.POSTPROCESS_CRASH.name))
-        logger.info(f'process_id = {process_id}, post_process added')
         return redirect(url_for('post_process_state', process_id=process_id))
     # results
-    df, summary_json = manager.get_UI_matrix(process_id)
+    df, summary_json = pd.read_csv("file:///home/elyawy/Development/Msc/projects/temp/CounterMatrixForUI.csv"), json.load(open("/home/elyawy/Development/Msc/projects/temp/summary_stat_UI.json"))
     if df is None:
-        logger.error(f'process_id = {process_id}, df = {df}')
         return render_template('file_download.html', process_id=process_id, text=UI_CONSTS.states_text_dict[State.Crashed], gif=UI_CONSTS.states_gifs_dict[State.Crashed], summary_stats=summary_json)
-    logger.info(f'process_id = {process_id}, df = {df}')
     return render_template('results.html', data=df.to_json(), summary_stats=summary_json)
 
-@app.route('/upload', methods=['GET', 'POST'])
-def upload_file():
-    logger.info(request.files)
-    return render_template('home.html')
 
 @app.route('/error/<error_type>')
 def error(error_type):
@@ -154,6 +135,7 @@ def error(error_type):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
+        print(request.form)
         if 'file' not in request.files:
             return redirect(request.url)
         file = request.files['file']
@@ -164,28 +146,13 @@ def home():
         if file and allowed_file(file.filename):
             email_address = request.form.get('email', None)
             if email_address == None:
-                logger.warning(f'email_address not available')
                 return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_MAIL.name))
-            logger.info(f'file uploaded = {file}, email_address = {email_address}')
             filename = secure_filename(file.filename)
-            new_process_id = manager.get_new_process_id()
-            folder2save_file = os.path.join(app.config['UPLOAD_FOLDERS_ROOT_PATH'], new_process_id)
-            os.mkdir(folder2save_file)
-            if not filename.endswith('gz'): #zipped file
-                file.save(os.path.join(folder2save_file, USER_FILE_NAME))
-            else:
-                file.save(os.path.join(folder2save_file, USER_FILE_NAME + '.gz'))
-            logger.info(f'file saved = {file}')
-            man_results = manager.add_kraken_process(new_process_id, email_address)
-            if not man_results:
-                logger.warning(f'job_manager_api can\'t add process')
-                return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
-            logger.info(f'process added man_results = {man_results}, redirecting url')
+            new_process_id = "1"
             return redirect(url_for('process_state', process_id=new_process_id))
         else:
-            logger.info(f'file extention not allowed')
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
-    return render_template('home.html')
+    return render_template('home.html', databases=KRAKEN_DB_NAMES, max_custom=KRAKEN_MAX_CUSTOM_SPECIES)
 
 @app.errorhandler(404)
 def page_not_found(e):
