@@ -7,7 +7,7 @@ KRAKEN_SEARCH_SCRIPT_COMMAND = str(BASE_PATH_TO_KRAKEN_SCRIPT) + "/kraken2"
 KRAKEN_CUSTOM_DB_SCRIPT_COMMAND = str(BASE_PATH_TO_KRAKEN_SCRIPT) + "/kraken2-build"
 
 # assuming the DB is in the same BASE folder as the kraken script
-KRAKEN_DB_NAMES = ["Bacteria", 'plant', 'human', 'fungi', 'protozoa', 'UniVec', 'plasmid', 'archaea', 'Viral',
+KRAKEN_DB_NAMES = ["Bacteria", 'human', 'fungi', 'protozoa', 'UniVec', 'plasmid', 'archaea', 'Viral',
                    'Kraken Standard']
 KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id}_results.txt"
 
@@ -16,8 +16,7 @@ KRAKEN_JOB_QUEUE_NAME = 'itaym'
 NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB = '10'
 KRAKEN_JOB_PREFIX = 'KR'
 KRAKEN_CUSTOM_DB_JOB_PREFIX = 'CDB'
-KRAKEN_CUSTOM_DB_NAME_PREFIX = 'CustomDB'
-MAX_CUSTOM_DB_RETRIES = 3
+KRAKEN_CUSTOM_DB_NAME_PREFIX = 'CustomDB_'
 CUSTOM_DB_TESTING_TMP_FILE = 'CustomDbTestingRes.txt'
 KRAKEN_JOB_TEMPLATE = '''
 #!/bin/bash
@@ -58,28 +57,44 @@ KRAKEN_CUSTOM_DB_JOB_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-source /powerapps/share/miniconda3-4.7.12/etc/profile.d/conda.sh
-conda activate NGScleaner
-cd {kraken_base_folder}
+#source /powerapps/share/miniconda3-4.7.12/etc/profile.d/conda.sh
+#conda activate NGScleaner
+source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+conda activate RLworkshop
+
 PYTHONPATH=$(pwd)
 
-DB_NAME="{custom_db_name}"
+DB_NAME="{kraken_base_folder}{custom_db_name}"
 
-mkdir $DB_NAME
+for i in 1
+do
 
-#/groups/pupko/alburquerque/Kraken/kraken2-build --db $DB_NAME --download-taxonomy --fast-build --threads 20
+    rm -r -f $DB_NAME
+    
+    mkdir $DB_NAME
+    
+    #/groups/pupko/alburquerque/Kraken/kraken2-build --db $DB_NAME --download-taxonomy --fast-build --threads 20
+    
+    mkdir $DB_NAME/taxonomy
+    
+    cp -R "{kraken_base_folder}Tax_Base/taxonomy/." $DB_NAME/taxonomy
+    
+    {kraken_db_command} --db $DB_NAME -add-to-library "{path_to_fasta_file}"
+    
+    {kraken_db_command} --db $DB_NAME --build --fast-build --threads 20
+    
+    {kraken_db_command} --db $DB_NAME --clean --fast-build --threads 20
+    
+    {kraken_run_command} --db /groups/pupko/alburquerque/Kraken/{custom_db_name} "{path_to_fasta_file}" --output "{testing_output_path}" --threads 20
+    
+    goodTest=python {path_to_validator_script} --TestingFastaPath "{testing_output_path}" 
 
-mkdir $DB_NAME/taxonomy
-
-cp -R "Tax_Base/taxonomy/." $DB_NAME/taxonomy
-
-{kraken_db_command} --db $DB_NAME -add-to-library "{path_to_fasta_file}"
-
-{kraken_db_command} --db $DB_NAME --build --fast-build --threads 20
-
-{kraken_db_command} --db $DB_NAME --clean --fast-build --threads 20
-
-{kraken_run_command} --db /groups/pupko/alburquerque/Kraken/{custom_db_name} "{path_to_fasta_file}" --output "{testing_output_path}" --threads 20
+    if [ "$goodTest" -eq 0 ]; then
+        echo "Broken";
+        break;
+    fi
+    
+done
 
 '''
 

@@ -1,10 +1,11 @@
 from KrakenHandlers.KrakenConsts import KRAKEN_CUSTOM_DB_JOB_TEMPLATE, KRAKEN_CUSTOM_DB_SCRIPT_COMMAND,\
     BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_CUSTOM_DB_JOB_PREFIX, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_QUEUE_NAME, \
-    KRAKEN_CUSTOM_DB_NAME_PREFIX, MAX_CUSTOM_DB_RETRIES, KRAKEN_SEARCH_SCRIPT_COMMAND, CUSTOM_DB_TESTING_TMP_FILE
+    KRAKEN_CUSTOM_DB_NAME_PREFIX, KRAKEN_SEARCH_SCRIPT_COMMAND, CUSTOM_DB_TESTING_TMP_FILE
 import pathlib
+
+from SharedConsts import PATH_TO_DB_VALIDATOR_SCRIPT
 from utils import logger
 from subprocess import PIPE, run
-import pandas as pd
 
 
 class KrakenCustomDbCreator:
@@ -28,29 +29,16 @@ class KrakenCustomDbCreator:
 
         custom_db_job_sh = KrakenCustomDbCreator._parse_db_job_text(custom_db_name, path_to_fasta_file,
                                                                     testing_output_path)
-        temp_script_path = path_to_fasta_file.parent / f'temp_kraken_custom_db_job_file_{custom_db_job_sh}.sh'
+        temp_script_path = path_to_fasta_file.parent / f'temp_kraken_custom_db_job_file_{custom_db_name}.sh'
         with open(temp_script_path, 'w+') as fp:
             fp.write(custom_db_job_sh)
 
-        successful_test = False
-        for i in range(MAX_CUSTOM_DB_RETRIES):
-            # run the job
-            logger.info(f'submitting job, temp_script_path = {temp_script_path}:')
-            terminal_cmd = f'/opt/pbs/bin/qsub {str(temp_script_path)}'
-            job_run_output = run(terminal_cmd, stdout=PIPE, stderr=PIPE, shell=True)
-            # once the db is created run the testing
-            testing_res = pd.read_csv(testing_output_path, sep='\t', header=None)
-            testing_res.rename(columns={0: 'is_classified', 1: "read_name", 2: "classified_species", 3: "read_length",
-                                        4: "all_classified_K_mers"}, inplace=True)
-            if 'U' not in testing_res['is_classified'].unique():
-                successful_test = True
-                break
+        # run the job
+        logger.info(f'submitting job, temp_script_path = {temp_script_path}:')
+        terminal_cmd = f'/opt/pbs/bin/qsub {str(temp_script_path)}'
+        job_run_output = run(terminal_cmd, stdout=PIPE, stderr=PIPE, shell=True)
 
-        if successful_test:
-            return custom_db_name
-
-        else:
-            return None
+        return job_run_output.stdout.decode('utf-8').split('.')[0]
 
     @staticmethod
     def _parse_db_job_text(custom_db_name: str, path_to_fasta_file: pathlib.Path, testing_output_path: pathlib.Path):
@@ -65,7 +53,7 @@ class KrakenCustomDbCreator:
         cpu_number = NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB
         job_name = f'{KRAKEN_CUSTOM_DB_JOB_PREFIX}_{custom_db_name}'
         job_logs_path = str(pathlib.Path(path_to_fasta_file).parent) + '/'
-        kraken_base_folder = str(BASE_PATH_TO_KRAKEN_SCRIPT)
+        kraken_base_folder = str(BASE_PATH_TO_KRAKEN_SCRIPT) + '/'
         custom_db_name = custom_db_name
         custom_db_sh_text = KRAKEN_CUSTOM_DB_JOB_TEMPLATE.format(queue_name=queue_name, cpu_number=cpu_number,
                                                                  job_name=job_name, error_files_path=job_logs_path,
@@ -75,6 +63,7 @@ class KrakenCustomDbCreator:
                                                                  kraken_db_command=KRAKEN_CUSTOM_DB_SCRIPT_COMMAND,
                                                                  kraken_run_command=KRAKEN_SEARCH_SCRIPT_COMMAND,
                                                                  testing_output_path=str(testing_output_path),
-                                                                 path_to_fasta_file=path_to_fasta_file)
+                                                                 path_to_fasta_file=path_to_fasta_file,
+                                                                 path_to_validator_script=PATH_TO_DB_VALIDATOR_SCRIPT)
 
         return custom_db_sh_text
