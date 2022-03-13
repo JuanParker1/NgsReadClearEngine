@@ -60,10 +60,10 @@ KRAKEN_CUSTOM_DB_JOB_TEMPLATE = '''
 #PBS -e {error_files_path}
 #PBS -o {output_files_path}
 
-#source /powerapps/share/miniconda3-4.7.12/etc/profile.d/conda.sh
-#conda activate NGScleaner
-source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
-conda activate RLworkshop
+source /powerapps/share/miniconda3-4.7.12/etc/profile.d/conda.sh
+conda activate NGScleaner
+#source /groups/pupko/alburquerque/miniconda3/etc/profile.d/conda.sh
+#conda activate RLworkshop
 
 PYTHONPATH=$(pwd)
 
