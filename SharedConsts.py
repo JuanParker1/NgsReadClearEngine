@@ -18,7 +18,8 @@ RANK_KRAKEN_TRANSLATIONS = {'U': 'Unclassified', 'R': 'Root', 'D': 'Domain', 'K'
                             'C': 'Class', 'O': 'Order', 'F': 'Family', 'G': 'Genus', 'S': 'Species'}
 
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path("/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")
-PATH_TO_DB_VALIDATOR_SCRIPT = Path("/groups/pupko/alburquerque/NgsReadClearEngine/KrakenHandlers/DbUtils/DbTestingScript.py")
+
+
 DF_LOADER_CHUCK_SIZE = 1e6
 RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'max_specie', 'classified_species', 'read_length', 'max_k_mer_p',
                            'all_classified_K_mers', 'split']

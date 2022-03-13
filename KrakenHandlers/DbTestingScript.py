@@ -4,7 +4,7 @@ import sys
 import os
 from pathlib import Path
 
-from KrakenHandlers.KrakenConsts import CUSTOM_DB_TESTING_TMP_FILE
+from KrakenConsts import CUSTOM_DB_TESTING_TMP_FILE
 
 if __name__ == '__main__':
     help_text = 'Path to a valid fasta file for testing, asuumes all sequences will be classified, ' \
