@@ -41,10 +41,10 @@ class SearchEngine:
         with open(temp_script_path, 'w+') as fp:
             fp.write(temp_script_text)
         logger.info(f'submitting job, temp_script_path = {temp_script_path}:')
-        # logger.debug(f'{temp_script_text}')
+        logger.debug(f'{temp_script_text}')
         terminal_cmd = f'/opt/pbs/bin/qsub {str(temp_script_path)}'
         job_run_output = subprocess.run(terminal_cmd, stdout=PIPE, stderr=PIPE, shell=True)
-        # os.remove(temp_script_path)
+        os.remove(temp_script_path)
         
         return job_run_output.stdout.decode('utf-8').split('.')[0], results_file_path
 
