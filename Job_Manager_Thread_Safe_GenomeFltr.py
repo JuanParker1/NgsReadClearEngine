@@ -1,5 +1,6 @@
 import os
 import SharedConsts as sc
+import KrakenHandlers.KrakenConsts as kc
 from KrakenHandlers.SearchEngine import SearchEngine
 from KrakenHandlers.SearchResultAnalyzer import run_post_process
 from Job_Manager_Thread_Safe import Job_Manager_Thread_Safe
@@ -13,17 +14,17 @@ class Job_Manager_Thread_Safe_GenomeFltr:
         self.__func2update_html_postprocess = func2update_html_postprocess
         self.__search_engine = SearchEngine()
         function2call_processes_changes_state = {
-            sc.KRAKEN_JOB_PREFIX: self.__func2update_html_kraken,
+            kc.KRAKEN_JOB_PREFIX: self.__func2update_html_kraken,
             sc.POSTPROCESS_JOB_PREFIX: self.__func2update_html_postprocess
         }
         function2append_process = {
-            sc.KRAKEN_JOB_PREFIX: self.__kraken_process,
+            kc.KRAKEN_JOB_PREFIX: self.__kraken_process,
             sc.POSTPROCESS_JOB_PREFIX: self.__postprocess_process
         }
         paths2verify_process_ends = {
             #when the job crashes/ finished this file path will be checked to set the change to finished if file exists of crashed if file doesn't.
             #for a string of: '' it won't set the state
-            sc.KRAKEN_JOB_PREFIX: lambda process_id: os.path.join(os.path.join(upload_root_path, process_id), sc.K_MER_COUNTER_MATRIX_FILE_NAME),
+            kc.KRAKEN_JOB_PREFIX: lambda process_id: os.path.join(os.path.join(upload_root_path, process_id), sc.K_MER_COUNTER_MATRIX_FILE_NAME),
             sc.POSTPROCESS_JOB_PREFIX: lambda process_id: os.path.join(os.path.join(upload_root_path, process_id), sc.FINAL_OUTPUT_FILE_NAME)
         }
         self.__job_manager = Job_Manager_Thread_Safe(max_number_of_process, upload_root_path, input_file_name, function2call_processes_changes_state, function2append_process, paths2verify_process_ends)
@@ -47,14 +48,14 @@ class Job_Manager_Thread_Safe_GenomeFltr:
         return None
         
     def get_kraken_job_state(self, process_id):
-        return self.__get_state(process_id, sc.KRAKEN_JOB_PREFIX)
+        return self.__get_state(process_id, kc.KRAKEN_JOB_PREFIX)
         
     def get_postprocess_job_state(self, process_id):
         return self.__get_state(process_id, sc.POSTPROCESS_JOB_PREFIX)
     
     def add_kraken_process(self, process_id: str, email_address):
         logger.info(f'process_id = {process_id}')
-        self.__job_manager.add_process(process_id, sc.KRAKEN_JOB_PREFIX, email_address)
+        self.__job_manager.add_process(process_id, kc.KRAKEN_JOB_PREFIX, email_address)
     
     def add_postprocess(self, process_id: str, k_threshold, species_list):
         logger.info(f'process_id = {process_id}')
