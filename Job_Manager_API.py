@@ -6,6 +6,7 @@ import pandas as pd
 from InputValidator import InputValidator
 from Job_Manager_Thread_Safe_GenomeFltr import Job_Manager_Thread_Safe_GenomeFltr
 from utils import send_email, State, logger, LOGGER_LEVEL_JOB_MANAGE_API
+from KrakenHandlers.KrakenConsts import KRAKEN_CUSTOM_DB_NAME_PREFIX
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, \
     FINAL_OUTPUT_FILE_NAME, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, EMAIL_CONSTS, UI_CONSTS, CUSTOM_DB_NAME
 logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_API)
@@ -32,7 +33,7 @@ class Job_Manager_API:
     def __update_download_process(self, process_id, state, email_address):
         logger.info(f'process_id = {process_id} state = {state}')
         if state == State.Finished:
-            self.__j_manager.add_kraken_process(process_id, email_address, CUSTOM_DB_NAME)
+            self.__j_manager.add_kraken_process(process_id, email_address, KRAKEN_CUSTOM_DB_NAME_PREFIX + process_id)
         self.__func2update_html(process_id, state)
 
     def __process_state_changed(self, process_id, state, email_address):

@@ -44,7 +44,7 @@ class Job_Manager_Thread_Safe_GenomeFltr:
     def __kraken_process(self, process_folder_path: str, email_address, db_type):
         logger.info(f'process_folder_path = {process_folder_path}')
         file2fltr = os.path.join(process_folder_path, self.__input_file_name)
-        pbs_id, _ = self.__search_engine.kraken_search(file2fltr, None)
+        pbs_id, _ = self.__search_engine.kraken_search(file2fltr, None, db_type)
         return pbs_id
     
     def __postprocess_process(self, process_folder_path: str, k_threshold, species_list):
