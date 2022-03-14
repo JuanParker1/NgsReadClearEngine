@@ -1,6 +1,7 @@
-from Bio import SeqIO
+from Bio import SeqIO, Entrez
 import gzip
 import shutil
+from urllib.error import HTTPError
 
 
 class InputValidator:
@@ -37,3 +38,11 @@ class InputValidator:
         elif self.__is_fastq(file2check):
             return True
         return False
+        
+    def valid_species(self, species: str):
+        try:
+            handle = Entrez.efetch(db="nucleotide", id=species, rettype="fasta", retmode="text")
+        except HTTPError as e:
+            print(e)
+            return False
+        return True

@@ -18,7 +18,7 @@ RANK_KRAKEN_TRANSLATIONS = {'U': 'Unclassified', 'R': 'Root', 'D': 'Domain', 'K'
                             'C': 'Class', 'O': 'Order', 'F': 'Family', 'G': 'Genus', 'S': 'Species'}
 
 PATH_TO_OUTPUT_PROCESSOR_SCRIPT = Path("/groups/pupko/alburquerque/NgsReadClearEngine/OutputProcessor.py")
-
+CUSTOM_DB_NAME = 'custom' # the name of the custom db type
 
 DF_LOADER_CHUCK_SIZE = 1e6
 RESULTS_COLUMNS_TO_KEEP = ['is_classified', 'read_name', 'max_specie', 'classified_species', 'read_length', 'max_k_mer_p',
@@ -102,8 +102,10 @@ class EMAIL_CONSTS:
     CRASHED_CONTENT = '''Thanks, for using GenomeFLTR\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us'''
 
 
-
 class UI_CONSTS:
+    SPECIES_FORM_PREFIX = 'species' # prefix for the form of the custom DB input (passed from home to __init__)
+    KRAKEN_MAX_CUSTOM_SPECIES = 3 # max inputs in the home when pressing the custom DB
+    
     static_folder_path = 'gifs/'
     states_gifs_dict = {
         State.Running: {
@@ -156,6 +158,7 @@ class UI_CONSTS:
         INVALID_FILE = f'invalid file or file extenstion, please use a valid: {allowed_files_str} file'
         EXPORT_FILE_UNAVAILABLE = f'failed to export file, try to rerun the file'
         PAGE_NOT_FOUND = 'The requested page does not exist'
+        INVALID_SPECIES_LIST = 'Some of the species inserted to the custom DB are invalid'
 
     PROCESS_INFO_PP = "We are processing your request, This may take several minutes. You may close this window, An email will be sent upon completion"
     PROCESS_INFO_KR = "We are processing your request, This may take several minutes for small files and several hours for larger ones. Please close this window, An email will be sent upon completion"

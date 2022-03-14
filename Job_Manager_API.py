@@ -6,8 +6,9 @@ import pandas as pd
 from InputValidator import InputValidator
 from Job_Manager_Thread_Safe_GenomeFltr import Job_Manager_Thread_Safe_GenomeFltr
 from utils import send_email, State, logger, LOGGER_LEVEL_JOB_MANAGE_API
+from KrakenHandlers.KrakenConsts import KRAKEN_CUSTOM_DB_NAME_PREFIX
 from SharedConsts import K_MER_COUNTER_MATRIX_FILE_NAME, \
-    FINAL_OUTPUT_FILE_NAME, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, EMAIL_CONSTS
+    FINAL_OUTPUT_FILE_NAME, KRAKEN_SUMMARY_RESULTS_FOR_UI_FILE_NAME, EMAIL_CONSTS, UI_CONSTS, CUSTOM_DB_NAME
 logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_API)
 
 
@@ -15,7 +16,7 @@ class Job_Manager_API:
     def __init__(self, max_number_of_process: int, upload_root_path: str, input_file_name: str, func2update_html):
         self.__input_file_name = input_file_name
         self.__upload_root_path = upload_root_path
-        self.__j_manager = Job_Manager_Thread_Safe_GenomeFltr(max_number_of_process, upload_root_path, input_file_name,
+        self.__j_manager = Job_Manager_Thread_Safe_GenomeFltr(max_number_of_process, upload_root_path, input_file_name, self.__update_download_process,
                                                              self.__process_state_changed, self.__process_state_changed)
         self.input_validator = InputValidator()
         self.__func2update_html = func2update_html
@@ -28,6 +29,12 @@ class Job_Manager_API:
             logger.info(f'sent email to {email_address}')
         except:
             logger.exception(f'failed to sent email to {email_address}')
+            
+    def __update_download_process(self, process_id, state, email_address):
+        logger.info(f'process_id = {process_id} state = {state}')
+        if state == State.Finished:
+            self.__j_manager.add_kraken_process(process_id, email_address, KRAKEN_CUSTOM_DB_NAME_PREFIX + process_id)
+        self.__func2update_html(process_id, state)
 
     def __process_state_changed(self, process_id, state, email_address):
         if state == State.Finished:
@@ -70,13 +77,16 @@ class Job_Manager_API:
     def get_new_process_id(self):
         return str(uuid.uuid4())
 
-    def add_kraken_process(self, process_id: str, email_address: str):
-        logger.info(f'process_id = {process_id} email_address = {email_address}')
+    def add_kraken_process(self, process_id: str, email_address: str, db_type: str, species2download: list):
+        logger.info(f'process_id = {process_id} email_address = {email_address} db_type = {db_type} species2download = {species2download}')
         is_valid_file = self.__validate_input_file(process_id)
         is_valid_email = self.__validate_email_address(email_address)
         if is_valid_file and is_valid_email:
             logger.info(f'validated file and email address')
-            self.__j_manager.add_kraken_process(process_id, email_address)
+            if db_type == CUSTOM_DB_NAME:
+                self.__j_manager.add_download_process(process_id, email_address, species2download)
+                return True
+            self.__j_manager.add_kraken_process(process_id, email_address, db_type)
             return True
         logger.warning(f'process_id = {process_id}, can\'t add process: is_valid_file = {is_valid_file} is_valid_email = {is_valid_email}')
         return False
@@ -100,7 +110,10 @@ class Job_Manager_API:
     
     def get_kraken_job_state(self, process_id):
         return self.__j_manager.get_kraken_job_state(process_id)
-        
+    
+    def get_download_job_state(self, process_id):
+        return self.__j_manager.get_download_job_state(process_id)
+    
     def get_postprocess_job_state(self, process_id):
         return self.__j_manager.get_postprocess_job_state(process_id)
         
@@ -117,3 +130,20 @@ class Job_Manager_API:
         
         logger.info(f'process_id = {process_id} df2return = {df2return} json2return = {json2return}')
         return df2return, json2return
+        
+    def parse_form_inputs(self, form_dict: dict):
+        email_address = form_dict.get('email', None)
+        db_type = form_dict.get('db', CUSTOM_DB_NAME)
+        species_list = []
+        if db_type == CUSTOM_DB_NAME:
+            for i in range(UI_CONSTS.KRAKEN_MAX_CUSTOM_SPECIES):
+                species_input = form_dict.get(UI_CONSTS.SPECIES_FORM_PREFIX + str(i), '')
+                if species_input != '':
+                    species_list.append(species_input)
+        return email_address, db_type, species_list
+        
+    def valid_species_list(self, species_list: list):
+        for species in species_list:
+            if not self.input_validator.valid_species(species):
+                return False
+        return True
