@@ -1,7 +1,9 @@
 let MAX_CUSTOM_SPECIES = 1;
+let SPECIES_FORM_PREFIX = ''
 
-function initScript(max_custom){
+function initScript(max_custom, species_prefix){
   MAX_CUSTOM_SPECIES = max_custom;
+  SPECIES_FORM_PREFIX = species_prefix;
 }
 
 
@@ -130,7 +132,7 @@ const customDBSelector = (event) => {
   for (let i = 0; i < MAX_CUSTOM_SPECIES; i++) {
     let input = document.createElement("input");
     input.setAttribute("type", "text");
-    input.setAttribute("name", "species" + i);
+    input.setAttribute("name", SPECIES_FORM_PREFIX + i);
     input.setAttribute("pattern", "[A-Za-z]{0,4}[0-9]{0,10}")
     input.setAttribute("placeholder", "text");
     input.classList = ["text-center"]

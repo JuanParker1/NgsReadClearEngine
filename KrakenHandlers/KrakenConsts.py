@@ -12,7 +12,6 @@ OUTPUT_MERGED_FASTA_FILE_NAME = f'merged.fasta'
 # assuming the DB is in the same BASE folder as the kraken script
 KRAKEN_DB_NAMES = ["Bacteria", 'human', 'fungi', 'protozoa', 'UniVec', 'plasmid', 'archaea', 'Viral',
                    'Kraken Standard']
-KRAKEN_MAX_CUSTOM_SPECIES = 3
 KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id}_results.txt"
 
 # Kraken Search Job variables

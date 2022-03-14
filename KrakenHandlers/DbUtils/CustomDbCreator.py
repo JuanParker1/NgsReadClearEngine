@@ -1,7 +1,7 @@
 import sys
 sys.path.append("/groups/pupko/alburquerque/NgsReadClearEngine")
 
-from KrakenConsts import KRAKEN_CUSTOM_DB_JOB_TEMPLATE, KRAKEN_CUSTOM_DB_SCRIPT_COMMAND,\
+from KrakenHandlers.KrakenConsts import KRAKEN_CUSTOM_DB_JOB_TEMPLATE, KRAKEN_CUSTOM_DB_SCRIPT_COMMAND,\
     BASE_PATH_TO_KRAKEN_SCRIPT, KRAKEN_CUSTOM_DB_JOB_PREFIX, NUBMER_OF_CPUS_KRAKEN_SEARCH_JOB, KRAKEN_JOB_QUEUE_NAME, \
     KRAKEN_CUSTOM_DB_NAME_PREFIX, KRAKEN_SEARCH_SCRIPT_COMMAND, CUSTOM_DB_TESTING_TMP_FILE, \
     PATH_TO_DB_VALIDATOR_SCRIPT, PATH_TO_CUSTOM_GENOME_DOWNLOAD_SCRIPT
@@ -14,10 +14,9 @@ from subprocess import PIPE, run
 class KrakenCustomDbCreator:
 
     @staticmethod
-    def create_custom_db(user_unique_id: str, path_to_fasta_file: pathlib.Path, list_of_accession_numbers: list):
+    def create_custom_db(path_to_fasta_file: str, list_of_accession_numbers: list):
         """
         orchestrator method for creating a custom db from a fasta file.
-        :param user_unique_id: a unique id for the db identifying the user is belongs to
         :param path_to_fasta_file: path to the fasta file
         assumes fasta file is STRICTLY in the format:
         >SEQ_NAME NCBI_ACCESSION_NUMBER
@@ -26,6 +25,8 @@ class KrakenCustomDbCreator:
         :param list_of_accession_numbers: list of NCBI accession numbers to download as the DB
         :return: the name of the correctly created DB or None if unsuccessful
         """
+        user_unique_id = str(pathlib.Path(path_to_fasta_file).parent.stem)
+        path_to_fasta_file = pathlib.Path(path_to_fasta_file)
         custom_db_name = KRAKEN_CUSTOM_DB_NAME_PREFIX + user_unique_id
         if (path_to_fasta_file.parent / custom_db_name).is_dir():
             return None  # the custom db already exists

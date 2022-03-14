@@ -1,8 +1,8 @@
 from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify, send_file
 from werkzeug.utils import secure_filename
 from Job_Manager_API import Job_Manager_API
-from SharedConsts import UI_CONSTS
-from KrakenHandlers.KrakenConsts import KRAKEN_DB_NAMES,  KRAKEN_MAX_CUSTOM_SPECIES
+from SharedConsts import UI_CONSTS, CUSTOM_DB_NAME
+from KrakenHandlers.KrakenConsts import KRAKEN_DB_NAMES
 from utils import State, logger
 import os
 import warnings
@@ -72,16 +72,25 @@ def allowed_file(filename):
 
 @app.route('/process_state/<process_id>')
 def process_state(process_id):
-    job_state = manager.get_kraken_job_state(process_id)
-    if job_state == None:
+    job_state_kraken = manager.get_kraken_job_state(process_id)
+    job_state_download = manager.get_download_job_state(process_id)
+    if job_state_kraken == None and job_state_download == None:
         return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.UNKNOWN_PROCESS_ID.name))
-    if job_state != State.Finished:
-        kwargs = {
-            "process_id": process_id,
-            "text": UI_CONSTS.states_text_dict[job_state],
-            "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
-            "gif": UI_CONSTS.states_gifs_dict[job_state],
-        }
+    if job_state_kraken != State.Finished:
+        if job_state_kraken != None:
+            kwargs = {
+                "process_id": process_id,
+                "text": UI_CONSTS.states_text_dict[job_state_kraken],
+                "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
+                "gif": UI_CONSTS.states_gifs_dict[job_state_kraken],
+            }
+        else:
+            kwargs = {
+                "process_id": process_id,
+                "text": UI_CONSTS.states_text_dict[job_state_download],
+                "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
+                "gif": UI_CONSTS.states_gifs_dict[job_state_download],
+            }
         return render_template('process_running.html', **kwargs)
     else:
         return redirect(url_for('results', process_id=process_id))
@@ -150,18 +159,23 @@ def error(error_type):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        if 'file' not in request.files:
+        logger.info(f'request.files = {request.files}')
+        if 'file/' not in request.files:
             return redirect(request.url)
-        file = request.files['file']
+        file = request.files['file/']
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
+        logger.info(f'request.form = {request.form}')
         if file.filename == '':
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
         if file and allowed_file(file.filename):
-            email_address = request.form.get('email', None)
+            email_address, db_type, species_list = manager.parse_form_inputs(request.form)
             if email_address == None:
                 logger.warning(f'email_address not available')
                 return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_MAIL.name))
+            if db_type == CUSTOM_DB_NAME:
+                if not manager.valid_species_list(species_list):
+                    return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_SPECIES_LIST.name))
             logger.info(f'file uploaded = {file}, email_address = {email_address}')
             filename = secure_filename(file.filename)
             new_process_id = manager.get_new_process_id()
@@ -172,7 +186,7 @@ def home():
             else:
                 file.save(os.path.join(folder2save_file, USER_FILE_NAME + '.gz'))
             logger.info(f'file saved = {file}')
-            man_results = manager.add_kraken_process(new_process_id, email_address)
+            man_results = manager.add_kraken_process(new_process_id, email_address, db_type, species_list)
             if not man_results:
                 logger.warning(f'job_manager_api can\'t add process')
                 return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
@@ -181,7 +195,7 @@ def home():
         else:
             logger.info(f'file extention not allowed')
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
-    return render_template('home.html', databases=KRAKEN_DB_NAMES, max_custom=KRAKEN_MAX_CUSTOM_SPECIES)
+    return render_template('home.html', databases=KRAKEN_DB_NAMES, max_custom=UI_CONSTS.KRAKEN_MAX_CUSTOM_SPECIES, species_prefix=UI_CONSTS.SPECIES_FORM_PREFIX)
 
 @app.errorhandler(404)
 def page_not_found(e):
