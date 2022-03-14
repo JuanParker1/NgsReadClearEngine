@@ -133,8 +133,11 @@ def process_output(**kwargs):
     ncbi_renaming_dict = get_NCBI_renaming_dict(summary_res_df)
 
     # create summary statistics json for UI
-    percent_of_contamination = round(100 - summary_res_df[summary_res_df[
-                                                              'rank_code'] == 'U']['percentage_of_reads'].iloc[0], 2)
+    if len(summary_res_df[summary_res_df['rank_code'] == 'U'].index) == 0:
+        percent_of_contamination = 0
+    else:
+        percent_of_contamination = round(100 - summary_res_df[summary_res_df[
+                                                                  'rank_code'] == 'U']['percentage_of_reads'].iloc[0], 2)
     summary_res_for_UI_df = summary_res_df[summary_res_df['rank_code'] == 'C'].sort_values('percentage_of_reads',
                                                                                              ascending=False)
     number_of_classes = len(summary_res_for_UI_df.index)
