@@ -27,7 +27,7 @@ SUMMARY_RESULTS_COLUMN_NAMES = ['percentage_of_reads', 'number_of_reads_under', 
                                 'ncbi_taxonomyID', 'name']
 UNCLASSIFIED_COLUMN_NAME = 'Non Bacterial'
 KRAKEN_UNCLASSIFIED_COLUMN_NAME = 'unclassified (taxid 0)'
-UNCLASSIFIED_BACTERIA_NAME = 'Unclassified Bacteria'
+UNCLASSIFIED_BACTERIA_NAME = 'Unclassified Contamination'
 UNCLASSIFIED_BACTERIA_ID = '-1'
 
 # PBS Listener consts
