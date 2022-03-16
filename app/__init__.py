@@ -160,9 +160,9 @@ def error(error_type):
 def home():
     if request.method == 'POST':
         logger.info(f'request.files = {request.files}')
-        if 'file/' not in request.files:
-            return redirect(request.url)
-        file = request.files['file/']
+        if 'file' not in request.files:
+            return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
+        file = request.files['file']
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
         logger.info(f'request.form = {request.form}')
@@ -195,7 +195,11 @@ def home():
         else:
             logger.info(f'file extention not allowed')
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
-    return render_template('home.html', databases=KRAKEN_DB_NAMES, max_custom=UI_CONSTS.KRAKEN_MAX_CUSTOM_SPECIES, species_prefix=UI_CONSTS.SPECIES_FORM_PREFIX)
+    return render_template('home.html', 
+            databases=KRAKEN_DB_NAMES, 
+            max_custom=UI_CONSTS.KRAKEN_MAX_CUSTOM_SPECIES, 
+            species_prefix=UI_CONSTS.SPECIES_FORM_PREFIX,
+            extensions=",".join(UI_CONSTS.ALLOWED_EXTENSIONS))
 
 @app.errorhandler(404)
 def page_not_found(e):
