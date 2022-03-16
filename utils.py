@@ -15,7 +15,8 @@ def init_dir_path():
         path2change = DEV_SERVER_DIR
     else:
         path2change = SERVER_DIR
-    os.chdir(path2change)
+    if os.path.isdir(path2change):
+        os.chdir(path2change)
 
 init_dir_path()
 logging_file_name = os.path.join('logs/', datetime.now().strftime('%Y_%m_%d_%H:%M.log'))
