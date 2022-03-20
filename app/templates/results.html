@@ -10,21 +10,29 @@
 
 
 {% block body %} 
-    <div class="bg-white bg-opacity-25 flex flex-col items-center justify-evenly h-full">
-    <div class="bg-white flex flex-col items-center justify-evenly mx-4 my-4  px-4 py-4 border-2 rounded-md shadow-lg">
+    <div class=" flex flex-col items-center justify-evenly h-full">
+    <div class="bg-white bg-opacity-75 flex flex-col items-center justify-evenly mx-4 my-4  px-4 py-4 border-2 rounded-md shadow-lg">
         <div class="flex w-full flex-row my-3">
             {% for key, value in summary_stats.items() %}
-            <div class="flex-1  text-center mx-2 px-2 py-2 select-none border-2 shadow-lg rounded bg-white">
-                <h1 class="text-4xl my-4">{{key}}</h1>
+            <div class="flex-1 uppercase text-center mx-2 px-2 py-2 select-none border-2 shadow-lg rounded bg-white">
+                <h1 class="text-4xl my-4">{{" ".join(key.split("_"))}}</h1>
                 <h1 class="text-2xl">{{value}}</h1>
             </div>
             {% endfor %}
         </div>
         <div  class="flex w-full flex-row items-center my-3" >
-            <div class="border-2 flex-1  rounded mx-2 shadow-lg bg-white" >
+            <div class="relative border-2 flex-1  rounded mx-2 shadow-lg bg-white" >
                 <canvas style="height: 480px; width: 640px" id="bar_chart" ></canvas>
+                <label class="peer w-6 h-6 bg-white border-2 border-black rounded-full cursor-pointer flex flex-col  items-center justify-center  absolute bottom-0 left-0 mx-2 my-2 tracking-wide ">
+                    <span class="font-bold text-1xl text-gray-700 select-none" >?</span>
+                </label>
+                <div class="opacity-0 absolute bottom-0 left-0 w-auto h-96 bg-teal-800 text-white rounded-md peer-hover:opacity-100 transition-opacity ease-linear duration-150 m-8 p-5 pointer-events-none border-black shadow-xl">
+                <p id="help_text" class="p-3 text-2xl text-justify select-none">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+                </p>
+                </div>
             </div>
-            <div class="flex flex-1 flex-col border-2 rounded mx-2 px-2 py-2 shadow-lg bg-white"   style="height: 480px;">
+            <div class="relative flex flex-1 flex-col border-2 rounded mx-2 px-2 py-2 shadow-lg bg-white"   style="height: 480px;">
                 <label class="
                 px-2
                 py-4
@@ -48,9 +56,25 @@
                     <div id="other_species_container" class="flex flex-col my-2">
                     </div>
                 </div>
+                <label class="peer w-6 h-6 bg-white border-2 border-black rounded-full cursor-pointer flex flex-col  items-center justify-center  absolute bottom-0 left-0 mx-2 my-2 tracking-wide ">
+                    <span class="font-bold text-1xl text-gray-700 select-none" >?</span>
+                </label>
+                <div class="opacity-0 absolute bottom-0 left-0 w-auto h-96 bg-teal-800 text-white rounded-md peer-hover:opacity-100 transition-opacity ease-linear duration-150 m-8 p-5 pointer-events-none border-black shadow-xl">
+                <p id="help_text" class="p-3 text-2xl text-justify select-none">
+                    laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                </p>
+                </div>
             </div>
-            <div class="border-2 rounded mx-2 shadow-lg bg-white" >
+            <div class="relative border-2 rounded mx-2 shadow-lg bg-white" >
                 <canvas style="height: 480px; width: 480px" id="pie_chart"> </canvas>
+                <label class="peer w-6 h-6 bg-white border-2 border-black rounded-full cursor-pointer flex flex-col  items-center justify-center  absolute bottom-0 left-0 mx-2 my-2 tracking-wide ">
+                    <span class="font-bold text-1xl text-gray-700 select-none" >?</span>
+                </label>
+                <div class="opacity-0 absolute bottom-0 left-0 w-auto h-96 bg-teal-800 text-white rounded-md peer-hover:opacity-100 transition-opacity ease-linear duration-150 m-8 p-5 pointer-events-none border-black shadow-xl">
+                <p id="help_text" class="p-3 text-2xl text-justify select-none">
+                    Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                </p>
+                </div>
             </div>
         </div>
 
