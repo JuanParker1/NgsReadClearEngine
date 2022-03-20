@@ -125,6 +125,9 @@ class Job_Manager_API:
         json2return = None
         if os.path.isfile(csv_UI_matrix_path):
             df2return = pd.read_csv(csv_UI_matrix_path,index_col=0)
+            columns = df2return.columns
+            new_columns = {column:column.replace("'","") for column in columns} #columns names cannot have ' inside - causes bugs in HTML
+            df2return.rename(columns=new_columns, inplace=True)
         if os.path.isfile(summary_stats_json_path):
             json2return = json.load(open(summary_stats_json_path))
         
