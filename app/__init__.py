@@ -76,6 +76,8 @@ def process_state(process_id):
     job_state_download = manager.get_download_job_state(process_id)
     if job_state_kraken == None and job_state_download == None:
         return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.UNKNOWN_PROCESS_ID.name))
+    if job_state_kraken == State.Crashed or job_state_download == State.Crashed:
+        return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.JOB_CRASHED.name))
     if job_state_kraken != State.Finished:
         if job_state_kraken != None:
             kwargs = {
@@ -97,11 +99,11 @@ def process_state(process_id):
 
 @app.route('/download_file/<process_id>', methods=['GET', 'POST'])
 def download_file(process_id):
+    file2send = manager.export_file(process_id)
+    if file2send == None:
+        logger.warning(f'failed to export file exporting, process_id = {process_id}, file2send = {file2send}')
+        return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.EXPORT_FILE_UNAVAILABLE.name))
     if request.method == 'POST':
-        file2send = manager.export_file(process_id)
-        if file2send == None:
-            logger.warning(f'failed to export file exporting, process_id = {process_id}, file2send = {file2send}')
-            return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.EXPORT_FILE_UNAVAILABLE.name))
         logger.info(f'exporting, process_id = {process_id}, file2send = {file2send}')
         return send_file(file2send, mimetype='application/octet-stream')
     return render_template('export_file.html')
@@ -111,6 +113,8 @@ def post_process_state(process_id):
     job_state = manager.get_postprocess_job_state(process_id)
     if job_state == None:
         return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.UNKNOWN_PROCESS_ID.name))
+    if job_state == State.Crashed:
+        return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.JOB_CRASHED.name))
     if job_state != State.Finished:
         kwargs = {
             "process_id": process_id,

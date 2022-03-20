@@ -167,6 +167,7 @@ class UI_CONSTS:
         EXPORT_FILE_UNAVAILABLE = f'failed to export file, try to rerun the file'
         PAGE_NOT_FOUND = 'The requested page does not exist'
         INVALID_SPECIES_LIST = 'Some of the species inserted to the custom DB are invalid'
+        JOB_CRASHED = 'Your processed crashed... Make sure your input is valid'
 
     PROCESS_INFO_PP = "We are processing your request, This may take several minutes. You may close this window, An email will be sent upon completion"
     PROCESS_INFO_KR = "We are processing your request, This may take several minutes for small files and several hours for larger ones. Please close this window, An email will be sent upon completion"

@@ -93,7 +93,7 @@ const buttonClick = () => {
     document.getElementById("submit_button").removeEventListener("click", postForm);
     document.getElementById("formdiv").classList.add("hidden")
     document.getElementById("after_post").classList.remove("hidden")
-
+    
     let formdata = new FormData(document.getElementById("theForm"));
     
     let request = new XMLHttpRequest();
