@@ -195,7 +195,10 @@ def home():
         else:
             logger.info(f'file extention not allowed')
             return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.INVALID_FILE.name))
-    return render_template('home.html', databases=KRAKEN_DB_NAMES, max_custom=UI_CONSTS.KRAKEN_MAX_CUSTOM_SPECIES, species_prefix=UI_CONSTS.SPECIES_FORM_PREFIX)
+    return render_template('home.html', databases=KRAKEN_DB_NAMES, 
+                           max_custom=UI_CONSTS.KRAKEN_MAX_CUSTOM_SPECIES,
+                           species_prefix=UI_CONSTS.SPECIES_FORM_PREFIX,
+                           extensions=",".join(UI_CONSTS.ALLOWED_EXTENSIONS))
 
 @app.errorhandler(404)
 def page_not_found(e):

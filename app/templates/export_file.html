@@ -3,42 +3,25 @@
 
 
 {% block body %}
-<div class='w-full h-screen bg-no-repeat bg-cover' 
-       style="background-image: url('../static/images/background.jpg')">
 
+<div class="flex flex-col mx-auto  h-full justify-center items-center">
+    <div class="flex-0 h-32 my-4">
+        <h1 class="text-8xl text-white select-none">Your filtered reads are ready</h1>
+    </div>
 
-    <div class="flex flex-col mx-auto  h-full justify-center items-center">
-        <div>
-            <h1 class="text-8xl text-white select-none">Read Filtration Made Easy.</h1>
-        </div>
-        <div class="h-48 my-8 flex flex-col justify-end opacity-100 transition-opacity duration-1000 ease-in-out" id="job_button">
-        <form id="export_btn" action="" method=post class="h-48 my-8 flex flex-col justify-end items-center duration-1000 ease-in-out">
-            <input type="submit" value="Export" class="
-              w-64
-              flex flex-col
-              items-center
-              rounded-full
-              px-4
-              py-6
-              bg-white
-              rounded-md
-              shadow-md
-              tracking-wide
-              uppercase
-              border border-blue
-              bg-gray-600
-              text-white
-              ease-linear
-              transition-all
-              duration-150
-              mx-8
-              my-4
-            ">
+    <div id="button_div" class="relative bg-opacity-75 h-64 w-1/3 py-3 border-2 border-white-400 bg-white rounded-lg flex">   
+        <form id="export_btn" action="" method=post class="flex-1 flex flex-col justify-center items-center">
+            <input  type="submit" value="Save File" class="w-64  flex flex-col  items-center  px-4  py-6  bg-white  rounded-md  shadow-lg  tracking-wide  uppercase  border border-blue-700  bg-white-600 text-black hover:bg-green-600 hover:text-white ease-linear font-bold transition-all  duration-150  mx-8  my-4 cursor-pointer">
         </form>
+        <label class="peer w-8 h-8 bg-white border-2 border-black rounded-full cursor-pointer flex flex-col  items-center justify-center  absolute bottom-0 left-0 mx-2 my-2 tracking-wide ">
+            <span class="font-bold text-2xl text-gray-700 select-none" >?</span>
+        </label>
+        <div class="opacity-0 absolute top-0 left-0 w-auto h-48 bg-white border border-1 rounded-md bg-white peer-hover:opacity-100 transition-opacity ease-linear duration-150 m-8 p-5 pointer-events-none border-white shadow-lg">
+        <p id="help_text" class="p-3 text-2xl text-justify select-none">Pressing the button will start the download of your
+            filtered reads file. The file may be large, Make sure to prepare the appropriate disk space.
+        </p>
         </div>
     </div>
+
 </div>
-</body>
-<script>
-</script>
 {% endblock %}
