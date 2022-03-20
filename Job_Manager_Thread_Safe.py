@@ -5,7 +5,8 @@ from threading import Lock
 from apscheduler.schedulers.background import BackgroundScheduler
 from JobListener import PbsListener
 import SharedConsts as sc
-from utils import State, logger, LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE
+from SharedConsts import State
+from utils import logger, LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE
 logger.setLevel(LOGGER_LEVEL_JOB_MANAGE_THREAD_SAFE)
 
 
