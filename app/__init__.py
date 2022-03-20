@@ -1,9 +1,9 @@
 from flask import Flask, flash, request, redirect, url_for, render_template, Response, jsonify, send_file
 from werkzeug.utils import secure_filename
 from Job_Manager_API import Job_Manager_API
-from SharedConsts import UI_CONSTS, CUSTOM_DB_NAME
+from SharedConsts import UI_CONSTS, CUSTOM_DB_NAME, State
 from KrakenHandlers.KrakenConsts import KRAKEN_DB_NAMES
-from utils import State, logger
+from utils import logger
 import os
 import warnings
 import time
