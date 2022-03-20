@@ -15,21 +15,13 @@ def init_dir_path():
         path2change = DEV_SERVER_DIR
     else:
         path2change = SERVER_DIR
-    os.chdir(path2change)
+    if os.path.isdir(path2change):
+        os.chdir(path2change)
 
 init_dir_path()
 logging_file_name = os.path.join('logs/', datetime.now().strftime('%Y_%m_%d_%H:%M.log'))
 logging.basicConfig(filename = logging_file_name, level=logging.WARNING, format='%(asctime)s[%(levelname)s][%(filename)s][%(funcName)s]: %(message)s')
 logger = logging.getLogger('main')
-
-
-class State(Enum):
-    Running = 1
-    Finished = 2
-    Crashed = 3
-    Waiting = 4
-    Init = 5
-    Queue = 6
 
 
 def send_email(smtp_server, sender, receiver, subject='', content=''):

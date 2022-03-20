@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from utils import State
 from enum import Enum
 
 # OUTPUT consts
@@ -100,6 +99,15 @@ class EMAIL_CONSTS:
     FINISHED_CONTENT = '''Thanks, for using GenomeFLTR\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us'''
     CRASHED_TITLE = f'Genomefltr - Job crashed'
     CRASHED_CONTENT = '''Thanks, for using GenomeFLTR\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us'''
+
+
+class State(Enum):
+    Running = 1
+    Finished = 2
+    Crashed = 3
+    Waiting = 4
+    Init = 5
+    Queue = 6
 
 
 class UI_CONSTS:
