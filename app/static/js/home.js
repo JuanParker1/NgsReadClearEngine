@@ -83,7 +83,7 @@ const buttonClick = () => {
       job_form[1].valid = true;
       document.getElementById("file_div").classList.add("hidden");
       document.getElementById("database_div").classList.remove("hidden");
-      help_text.innerText = ` Please select the database against which reads should be filtered. Please select "custom" to provide your own selection of potential contaminating organisms.`
+      help_text.innerText = `Please select the database against which reads should be filtered. Please select "custom" to provide your own selection of potential contaminating organisms.`
     }
   }
 
