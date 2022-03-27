@@ -62,8 +62,8 @@
                   <span class="select-none">Custom</span>
                 </label> -->
                 <fieldset id="db" class="grid grid-cols-5">
-                  {% for group in databases %}
-                   <div class="select-none">
+                  {% for group, explanation in databases.items() %}
+                   <div class="select-none" title="{{explanation}}">
                      <input class="hidden peer" id="{{group}}" type="radio" name=db value="{{group}}" checked/>
                      <label  for="{{group}}" class="w-48 text-center flex flex-row justify-center bg-white peer-checked:bg-green-600 peer-checked:text-white  rounded-md  shadow-lg  tracking-wide  uppercase  border border-blue-700  hover:bg-cyan-600 hover:text-white font-bold  ease-linear  transition-all   mx-2  my-2 px-3 py-3 cursor-pointer">
                        <span class="select-none  text-sm">{{group}}</span>
@@ -95,7 +95,7 @@
         <div id="after_post" class="hidden flex flex-row h-48 my-8 justify-end items-center">
           <h1 id="progress-bar" class="text-center text-white animate-pulse text-4xl select-none"></h1>
         </div>
-        <a  href="/about" class="w-32  flex flex-col  items-center  px-4  py-3  bg-white  rounded-md  shadow-lg  tracking-wide  uppercase  border border-blue-700  bg-white-600 text-black hover:bg-purple-600 hover:text-white ease-linear  transition-all  duration-150  mx-8  my-4 cursor-pointer">
+        <a  href="/about" target="_blank" rel="noopener noreferrer" class="w-32  flex flex-col  items-center  px-4  py-3  bg-white  rounded-md  shadow-lg  tracking-wide  uppercase  border border-blue-700  bg-white-600 text-black hover:bg-purple-600 hover:text-white ease-linear  transition-all  duration-150  mx-8  my-4 cursor-pointer">
           About
         </a>
     </div>
