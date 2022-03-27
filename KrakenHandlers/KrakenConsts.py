@@ -10,8 +10,17 @@ KRAKEN_CUSTOM_DB_SCRIPT_COMMAND = str(BASE_PATH_TO_KRAKEN_SCRIPT) + "/kraken2-bu
 OUTPUT_MERGED_FASTA_FILE_NAME = f'merged.fasta'
 
 # assuming the DB is in the same BASE folder as the kraken script
-KRAKEN_DB_NAMES = ["Bacteria", 'human', 'fungi', 'protozoa', 'UniVec', 'plasmid', 'archaea', 'Viral',
-                   'Kraken Standard']
+KRAKEN_DB_NAMES = {
+                    'Bacteria': "RefSeq complete bacterial genomes/proteins",
+                    'human': "GRCh38 human genome/proteins",
+                    'fungi': "RefSeq complete fungal genomes/proteins",
+                    'protozoa': "RefSeq complete protozoan genomes/proteins",
+                    'UniVec': "NCBI-supplied database of vector, adapter, linker, and primer sequences that may be contaminating sequencing projects and/or assemblies",
+                    'plasmid': "RefSeq plasmid nucleotide/protein sequences",
+                    'archaea': "RefSeq complete archaeal genomes/proteins",
+                    'Viral': "RefSeq complete viral genomes/proteins",
+                    'Kraken Standard': "complete genomes in RefSeq for the bacterial, archaeal, and viral domains, along with the human genome and a collection of known vectors (UniVec_Core)."
+                  }
 KRAKEN_RESULTS_FILE_PATH = BASE_PATH_TO_KRAKEN_SCRIPT / "Temp_Job_{job_unique_id}_results.txt"
 
 # Kraken Search Job variables

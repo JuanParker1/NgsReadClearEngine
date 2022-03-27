@@ -153,7 +153,7 @@ class UI_CONSTS:
     }
     
     global allowed_files_str  # todo: Edo, do we have to use a global var?
-    ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz'}
+    ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz', 'txt'}
     allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
 
 
