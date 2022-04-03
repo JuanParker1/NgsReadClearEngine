@@ -30,7 +30,7 @@ class PbsListener:
         main running loop for the listener
         :return: None
         """
-        # get running jobs data
+        #get running jobs data
         current_job_state = self.get_server_job_stats()
         # check state diff, act accordingly
         self.handle_job_state(current_job_state)
@@ -97,8 +97,9 @@ class PbsListener:
         gets the users current job statistics (running and queued) and parses them
         :return: a data frame of all current jobs
         """
-        result = subprocess.run(['/opt/pbs/bin/qstat', f'-u {SRVER_USERNAME}'], stdout=subprocess.PIPE)
-        result_lines = (str(result.stdout).split('\\n'))[5:-1]  # irrelevant text from qstat
+        result = subprocess.Popen(['/opt/pbs/bin/qstat', f'-u {SRVER_USERNAME}'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, err = result.communicate()
+        result_lines = (str(output).split('\\n'))[5:-1]  # irrelevant text from qstat
         tmp_results_params = [re.sub('\s+', ' ', x).split(' ') for x in result_lines]  # remove spaces and turn to data
         results_params = [i[:11] for i in tmp_results_params]
         results_df = pd.DataFrame(results_params, columns=QstatDataColumns)

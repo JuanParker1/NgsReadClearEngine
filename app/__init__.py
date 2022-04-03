@@ -37,12 +37,12 @@ def remove_update(process_id):
         process_id2update.remove(process_id)
     return jsonify('data')
 
-@app.route('/stream/')
+@app.route('/stream')
 def stream():
     # function to stream data to client
     requests_time_dict = {}
     TIME_BETWEEN_BROADCASTING_EVENTS = 0.1
-    
+
     def eventStream():
         while True:
             if len(process_id2update):
@@ -58,6 +58,7 @@ def stream():
                     logger.info(f'removing max_broadcasting_event = {process_id} as it reached the max amount of time broadcasting')
                     requests_time_dict.pop(max_broadcasting_event)
             else:
+                yield 'data: nodata\n\n' # do not delete, closes thread on user exit
                 requests_time_dict.clear()
                 time.sleep(1)
     return Response(eventStream(), mimetype="text/event-stream")

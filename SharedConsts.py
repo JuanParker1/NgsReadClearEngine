@@ -139,7 +139,7 @@ class UI_CONSTS:
         State.Queue:  {
             "background": "#1674d2",
             "gif_id": "TvLuZ00OIADoQ"
-        },
+        }
     }
 
     
