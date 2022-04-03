@@ -21,7 +21,7 @@
 	//to listen for process updates
 	const process_id = '{{process_id}}';
 	let did_sent = false
-	const eventSource = new EventSource("/stream/")
+	const eventSource = new EventSource("/stream")
 		eventSource.onmessage = function(e) {
 		if (process_id === e.data){
 			if (!did_sent){
@@ -35,6 +35,7 @@
 				http.send();
 				did_sent = true
 			}
+			eventSource.close()
 			window.location.reload();
 		}
 	}
