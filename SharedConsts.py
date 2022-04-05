@@ -153,7 +153,7 @@ class UI_CONSTS:
     }
     
     global allowed_files_str  # todo: Edo, do we have to use a global var?
-    ALLOWED_EXTENSIONS = {'fasta', 'fastqc', 'gz', 'txt'}
+    ALLOWED_EXTENSIONS = {'fasta', 'fastq', 'gz', 'txt'}
     allowed_files_str = ', '.join(ALLOWED_EXTENSIONS) #better to path string than list
 
 
@@ -171,3 +171,6 @@ class UI_CONSTS:
 
     PROCESS_INFO_PP = "We are processing your request, This may take several minutes. You may close this window, An email will be sent upon completion"
     PROCESS_INFO_KR = "We are processing your request, This may take several minutes for small files and several hours for larger ones. Please close this window, An email will be sent upon completion"
+
+    TEXT_TO_RELOAD_HTML = "update" # empty string not allowed! will cause massive bug!
+    FETCH_UPDATE_INTERVAL_HTML_SEC = 15 # should be greater than 5 (keep-alive timeout mod_wsgi).

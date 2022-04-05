@@ -150,3 +150,6 @@ class Job_Manager_API:
             if not self.input_validator.valid_species(species):
                 return False
         return True
+
+    def clean_internal_state(self):
+        self.__j_manager.clean_internal_state()

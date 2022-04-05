@@ -33,7 +33,7 @@ class Job_Manager_Thread_Safe_GenomeFltr:
             kc.KRAKEN_JOB_PREFIX: lambda process_id: os.path.join(os.path.join(upload_root_path, process_id), sc.K_MER_COUNTER_MATRIX_FILE_NAME),
             sc.POSTPROCESS_JOB_PREFIX: lambda process_id: os.path.join(os.path.join(upload_root_path, process_id), sc.FINAL_OUTPUT_FILE_NAME)
         }
-        self.__job_manager = Job_Manager_Thread_Safe(max_number_of_process, upload_root_path, input_file_name, function2call_processes_changes_state, function2append_process, paths2verify_process_ends)
+        self.__job_manager = Job_Manager_Thread_Safe(max_number_of_process, upload_root_path, function2call_processes_changes_state, function2append_process, paths2verify_process_ends)
     
     def __download_process(self, process_folder_path: str, email_address, species2download):
         logger.info(f'process_folder_path = {process_folder_path}')
@@ -83,3 +83,6 @@ class Job_Manager_Thread_Safe_GenomeFltr:
     def get_job_state(self, process_id: str, job_prefix: str):
         logger.info(f'process_id = {process_id} job_prefix = {job_prefix}')
         return self.__job_manager.get_job_state(process_id, job_prefix)
+
+    def clean_internal_state(self):
+        self.__job_manager.clean_internal_state()
