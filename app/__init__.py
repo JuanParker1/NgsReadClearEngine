@@ -20,6 +20,9 @@ TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC = 1200
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '168b36af-0822-4393-92c2-3e8592a48d2c'
+app.config['PASSPHRASE_KILL'] = '?GL~bXZy7(xr)n@uJX5T4Tw6n/\s6'
+app.config['PASSPHRASE_CLEAN'] = '4?eB!ay9Ah#rqqU$f+K!tQvLtFU2sf-D'
+
 app.config['UPLOAD_FOLDERS_ROOT_PATH'] = UPLOAD_FOLDERS_ROOT_PATH # path to folder
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 * 1000 # MAX file size to upload
 process_id2update = []
@@ -29,39 +32,14 @@ def update_html(process_id, state):
     if process_id:
         process_id2update.append(process_id)
 
-@app.route('/remove_update/<process_id>')
-def remove_update(process_id):
-    logger.info(f'process_id = {process_id}')
+
+@app.route("/process_page_update/<process_id>")
+def update_process_page(process_id):
     if process_id in process_id2update:
-        logger.info(f'removing {process_id} from process_id2update')
         process_id2update.remove(process_id)
-    return jsonify('data')
+        return UI_CONSTS.TEXT_TO_RELOAD_HTML
+    return ""
 
-@app.route('/stream')
-def stream():
-    # function to stream data to client
-    requests_time_dict = {}
-    TIME_BETWEEN_BROADCASTING_EVENTS = 0.1
-
-    def eventStream():
-        while True:
-            if len(process_id2update):
-                for process_id in process_id2update:
-                    yield 'data: {}\n\n'.format(process_id)
-                    time.sleep(TIME_BETWEEN_BROADCASTING_EVENTS)
-                    time_broadcasting_process_event = requests_time_dict.get(process_id, 0)
-                    time_broadcasting_process_event += TIME_BETWEEN_BROADCASTING_EVENTS
-                    requests_time_dict[process_id] = time_broadcasting_process_event
-
-                max_broadcasting_event = max(requests_time_dict, key=requests_time_dict.get)
-                if requests_time_dict[max_broadcasting_event] >= TIME_OF_STREAMING_UPDATE_REQUEST_BEFORE_DELETING_IT_SEC:
-                    logger.info(f'removing max_broadcasting_event = {process_id} as it reached the max amount of time broadcasting')
-                    requests_time_dict.pop(max_broadcasting_event)
-            else:
-                yield 'data: nodata\n\n' # do not delete, closes thread on user exit
-                requests_time_dict.clear()
-                time.sleep(1)
-    return Response(eventStream(), mimetype="text/event-stream")
 
 manager = Job_Manager_API(MAX_NUMBER_PROCESS, UPLOAD_FOLDERS_ROOT_PATH, USER_FILE_NAME, update_html)
 
@@ -80,20 +58,14 @@ def process_state(process_id):
     if job_state_kraken == State.Crashed or job_state_download == State.Crashed:
         return redirect(url_for('error', error_type=UI_CONSTS.UI_Errors.JOB_CRASHED.name))
     if job_state_kraken != State.Finished:
-        if job_state_kraken != None:
-            kwargs = {
-                "process_id": process_id,
-                "text": UI_CONSTS.states_text_dict[job_state_kraken],
-                "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
-                "gif": UI_CONSTS.states_gifs_dict[job_state_kraken],
-            }
-        else:
-            kwargs = {
-                "process_id": process_id,
-                "text": UI_CONSTS.states_text_dict[job_state_download],
-                "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
-                "gif": UI_CONSTS.states_gifs_dict[job_state_download],
-            }
+        kwargs = {
+            "process_id": process_id,
+            "text": UI_CONSTS.states_text_dict[job_state_kraken] if job_state_kraken != None else UI_CONSTS.states_text_dict[job_state_download],
+            "gif": UI_CONSTS.states_gifs_dict[job_state_kraken] if job_state_kraken != None else UI_CONSTS.states_gifs_dict[job_state_download],
+            "message_to_user": UI_CONSTS.PROCESS_INFO_KR,
+            "update_text": UI_CONSTS.TEXT_TO_RELOAD_HTML,
+            "update_interval_sec": UI_CONSTS.FETCH_UPDATE_INTERVAL_HTML_SEC
+        }
         return render_template('process_running.html', **kwargs)
     else:
         return redirect(url_for('results', process_id=process_id))
@@ -122,6 +94,8 @@ def post_process_state(process_id):
             "text": UI_CONSTS.states_text_dict[job_state],
             "message_to_user": UI_CONSTS.PROCESS_INFO_PP,
             "gif": UI_CONSTS.states_gifs_dict[job_state],
+            "update_text": UI_CONSTS.TEXT_TO_RELOAD_HTML,
+            "update_interval_sec": UI_CONSTS.FETCH_UPDATE_INTERVAL_HTML_SEC
         }
         return render_template('process_running.html', **kwargs)
     else:
@@ -214,3 +188,22 @@ def page_not_found(e):
 @app.route("/about")
 def about():
     return render_template('about.html')
+
+
+
+@app.route("/debug/killswitch", methods=['GET', 'POST'])
+def killswitch():
+    if request.method == 'POST':
+        passphrase = request.form.get("passphrase")
+        if passphrase == app.config['PASSPHRASE_KILL']:
+            # should check which process group we are in.
+            import signal, os
+            os.kill(os.getpid(), signal.SIGINT)
+        if passphrase == app.config['PASSPHRASE_CLEAN']:
+            manager.clean_internal_state()
+    return render_template('debug.html')
+
+
+
+
+
