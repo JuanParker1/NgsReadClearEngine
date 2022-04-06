@@ -85,8 +85,10 @@ class Job_Manager_API:
             logger.info(f'validated file and email address')
             if db_type == CUSTOM_DB_NAME:
                 self.__j_manager.add_download_process(process_id, email_address, species2download)
+                self.__build_and_send_mail(process_id, EMAIL_CONSTS.SUBMITTED_TITLE, EMAIL_CONSTS.SUBMITTED_CONTENT.format(process_id=process_id), email_address)
                 return True
             self.__j_manager.add_kraken_process(process_id, email_address, db_type)
+            self.__build_and_send_mail(process_id, EMAIL_CONSTS.SUBMITTED_TITLE, EMAIL_CONSTS.SUBMITTED_CONTENT.format(process_id=process_id), email_address)
             return True
         logger.warning(f'process_id = {process_id}, can\'t add process: is_valid_file = {is_valid_file} is_valid_email = {is_valid_email}')
         return False

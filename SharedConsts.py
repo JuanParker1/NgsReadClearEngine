@@ -99,6 +99,8 @@ class EMAIL_CONSTS:
     FINISHED_CONTENT = '''Thanks, for using GenomeFLTR\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us'''
     CRASHED_TITLE = f'Genomefltr - Job crashed'
     CRASHED_CONTENT = '''Thanks, for using GenomeFLTR\nYour results are at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nPlease, remember to cite us'''
+    SUBMITTED_TITLE = f'Genomefltr - Job submitted'
+    SUBMITTED_CONTENT = '''Thanks, for using GenomeFLTR\nYour job has been submitted, you can check the status at:\nhttp://genomefltr.tau.ac.il/process_state/{process_id}\nAn update will be sent uppon completion'''
 
 
 class State(Enum):

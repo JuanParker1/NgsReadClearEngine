@@ -169,13 +169,13 @@ const customDBSelector = (event) => {
     let input = document.createElement("input");
     input.setAttribute("type", "text");
     input.setAttribute("name", SPECIES_FORM_PREFIX + i);
-    input.setAttribute("maxlength", "15")
+    input.setAttribute("maxlength", "30")
     // input.setAttribute("pattern", "[A-Za-z]{0,4}[_]{0,1}[0-9]{0,10}")
-    input.setAttribute("placeholder", "NCBI TAXONOMIC ID");
+    input.setAttribute("placeholder", "ACCESSION NUMBER");
     input.classList = ["w-64 text-center mx-2  my-2 px-3 py-3 rounded-md uppercase  border border-blue-700"]
     db_options.appendChild(input)
   }
-  help_text.innerText = `Please enter at least one valid NCBI taxonomic ID, We will build a filter based on the taxa you have entered.`
+  help_text.innerText = `Please enter at least one valid ACCESSION NUMBER, We will build a filter based on the taxa you have entered.`
   db_options.addEventListener("input", enableSubmit)
 
 }
